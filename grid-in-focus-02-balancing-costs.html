@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>£1.7 billion to turn wind farms off — The Grid in Focus #02</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-soft: #3d3d3d;
+    --ink-muted: #6b6b6b;
+    --paper: #f4f1ea;
+    --paper-warm: #ebe6db;
+    --rule: #d4ccba;
+    --accent: #c4451c;
+    --accent-soft: #e8a48a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(196, 69, 28, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(74, 122, 140, 0.04) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .series-mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s;
+  }
+  .series-mark:hover { opacity: 0.65; }
+  .series-mark span { font-style: normal; color: var(--accent); }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+
+  .thin-rule {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin-bottom: 56px;
+  }
+
+  /* Back button */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    text-decoration: none;
+    margin-bottom: 40px;
+    padding: 8px 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .back-btn:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .back-btn::before {
+    content: '←';
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .back-btn:hover::before { transform: translateX(-4px); }
+
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-bottom: 28px;
+    max-width: 18ch;
+  }
+  .headline em { font-style: italic; font-weight: 400; color: var(--accent); }
+
+  .standfirst {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin-bottom: 64px;
+    padding-left: 24px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .hero-number {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
+    align-items: end;
+    margin-bottom: 80px;
+    padding: 48px 0 36px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    position: relative;
+  }
+
+  .hero-number-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  .hero-number-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(72px, 13vw, 168px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .hero-number-value .currency {
+    font-size: 0.55em;
+    vertical-align: top;
+    color: var(--ink-muted);
+    font-weight: 400;
+    margin-right: 4px;
+  }
+  .hero-number-value .unit {
+    font-size: 0.4em;
+    color: var(--ink-muted);
+    font-weight: 400;
+    font-style: italic;
+    margin-left: 8px;
+  }
+
+  .hero-number-text {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 36ch;
+    padding-bottom: 12px;
+  }
+  .hero-number-text strong { color: var(--ink); font-weight: 500; }
+
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 72px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stat {
+    padding: 28px 24px 28px 0;
+    border-right: 1px solid var(--rule);
+    transition: background 0.25s;
+    cursor: default;
+  }
+  .stat:hover { background: var(--paper-warm); }
+  .stat:last-child { border-right: 0; padding-right: 0; }
+  .stat:not(:first-child) { padding-left: 24px; }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .stat-value .unit { font-size: 14px; color: var(--ink-muted); font-weight: 400; margin-left: 4px; }
+  .stat-detail { font-size: 13px; color: var(--ink-muted); }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.15s; }
+  .reveal-delay-2 { transition-delay: 0.3s; }
+
+  .section { margin-bottom: 64px; }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::before { content: ''; width: 24px; height: 1px; background: var(--accent); }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-bottom: 12px;
+    max-width: 32ch;
+  }
+
+  .section-blurb {
+    font-size: 15px;
+    color: var(--ink-soft);
+    max-width: 70ch;
+    margin-bottom: 32px;
+  }
+
+  .chart-frame {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    padding: 32px 24px 24px;
+    position: relative;
+  }
+  .chart-frame::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 12px; height: 12px;
+    border-top: 2px solid var(--ink);
+    border-left: 2px solid var(--ink);
+  }
+  .chart-frame::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    border-bottom: 2px solid var(--ink);
+    border-right: 2px solid var(--ink);
+  }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-muted); }
+  .axis line, .axis path { stroke: var(--rule); shape-rendering: crispEdges; }
+  .grid line { stroke: var(--rule); stroke-dasharray: 2,3; opacity: 0.6; }
+  .grid path { display: none; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 24px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .legend-item:hover { opacity: 0.7; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 2px; }
+  .legend-pct { font-family: 'JetBrains Mono', monospace; color: var(--ink-muted); font-size: 11px; margin-left: 4px; }
+
+  .insight {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 36px 40px;
+    margin: 80px 0;
+    position: relative;
+  }
+  .insight::before {
+    content: '"';
+    position: absolute;
+    top: -20px; left: 32px;
+    font-family: 'Fraunces', serif;
+    font-size: 120px;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 900;
+  }
+  .insight-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent-soft);
+    margin-bottom: 14px;
+    margin-left: 60px;
+  }
+  .insight-text {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.4;
+    margin-left: 60px;
+    max-width: 50ch;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 16px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--accent);
+    z-index: 1000;
+    box-shadow: 4px 4px 0 var(--accent);
+    min-width: 200px;
+  }
+  .tooltip.visible { opacity: 1; }
+  .tooltip-title {
+    color: var(--accent-soft);
+    margin-bottom: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 6px;
+  }
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    line-height: 1.9;
+  }
+  .tooltip-row .val { color: var(--accent-soft); font-weight: 500; }
+  .tooltip-note { margin-top: 8px; font-style: italic; color: var(--accent-soft); font-size: 10px; }
+
+  .footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .footer-text { font-size: 12px; color: var(--ink-muted); max-width: 60ch; line-height: 1.5; }
+  .footer-text strong { color: var(--ink); }
+  .footer-text a { color: var(--accent); text-decoration: none; }
+  .footer-text a:hover { text-decoration: underline; }
+  .byline { font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); text-align: right; }
+  .byline strong { font-style: normal; font-weight: 700; color: var(--ink); display: block; font-size: 16px; }
+
+  @media (max-width: 768px) {
+    .container { padding: 24px 18px 60px; }
+    .hero-number { grid-template-columns: 1fr; gap: 24px; }
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .stat { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 16px; }
+    .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+    .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0; }
+    .insight { padding: 28px 24px; }
+    .insight-text { margin-left: 0; font-size: 20px; }
+    .insight-label { margin-left: 0; }
+    .insight::before { left: 16px; font-size: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="masthead">
+    <a href="index.html" class="series-mark">The Grid <span>in Focus</span></a>
+    <div class="meta">№ 02 · Balancing Costs · FY 2024/25</div>
+  </div>
+  <hr class="thin-rule">
+
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline">£1.7 billion to turn <em>wind farms off</em>.</h1>
+  <p class="standfirst">
+    In the financial year just ended, NESO spent more on managing transmission constraints — paying generators
+    in the wrong place to turn off, and others in the right place to turn on — than the entire cost of balancing
+    Britain's grid as recently as 2018. That single line item is now bigger than the rest of balancing put together.
+  </p>
+
+  <!-- Hero counter -->
+  <div class="hero-number" id="hero-number">
+    <div>
+      <div class="hero-number-label">— Constraint costs, FY 2024/25</div>
+      <div class="hero-number-value">
+        <span class="currency">£</span><span id="hero-count">0.0</span><span class="unit">bn</span>
+      </div>
+    </div>
+    <div class="hero-number-text">
+      Up <strong>64% in a single year</strong> — driven by record wind output meeting a transmission network
+      that physically cannot move it from Scotland to England. Total balancing cost: £2.7bn.
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stats-strip" id="stats-strip">
+    <div class="stat">
+      <div class="stat-label">Total balancing cost</div>
+      <div class="stat-value">£<span class="count-up" data-target="2.7" data-decimals="1" data-suffix="bn">0.0bn</span></div>
+      <div class="stat-detail">FY 2024/25, +10% YoY</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Constraint share</div>
+      <div class="stat-value"><span class="count-up" data-target="63" data-decimals="0" data-suffix="%">0%</span></div>
+      <div class="stat-detail">of total balancing spend</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Wind curtailed</div>
+      <div class="stat-value"><span class="count-up" data-target="13.5" data-decimals="1" data-suffix="TWh">0TWh</span></div>
+      <div class="stat-detail">+81% YoY thermal constraint volume</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Projected by 2030</div>
+      <div class="stat-value">£4–8<span class="unit">bn</span></div>
+      <div class="stat-detail">NESO's own forecast range</div>
+    </div>
+  </div>
+
+  <!-- Figure 01 -->
+  <div class="section reveal" id="section-01">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">The seven-year trajectory</h2>
+    <p class="section-blurb">
+      Annual balancing cost since 2018/19. The 2022/23 spike was the gas-price crisis; the 2024/25 rebound is
+      something different — a structural problem. As more wind connects in Scotland and the wires south stay
+      the same size, costs rise even when wholesale prices fall. <strong>Hover any bar for the full breakdown.</strong>
+    </p>
+    <div class="chart-frame">
+      <svg id="trend-chart" viewBox="0 0 1100 400"></svg>
+    </div>
+  </div>
+
+  <div class="insight reveal">
+    <div class="insight-label">The signal in the noise</div>
+    <div class="insight-text">
+      Constraint payments aren't a sign of mismanagement. They're the predictable, accounting-line cost of building
+      wind faster than the wires that move it. Every £ of constraint cost is a £ of stranded clean energy — and
+      a £ that could have been a transmission upgrade five years earlier.
+    </div>
+  </div>
+
+  <!-- Figure 02 -->
+  <div class="section reveal" id="section-02">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">Where the £2.7 billion went</h2>
+    <p class="section-blurb">
+      Composition of FY 2024/25 balancing spend, using NESO's published cost categories. Constraints dwarf
+      everything else — they're now nearly twice the size of the next-largest category. <strong>Hover any bar to explore.</strong>
+    </p>
+    <div class="chart-frame">
+      <svg id="breakdown-chart" viewBox="0 0 1100 320"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <!-- Figure 03 -->
+  <div class="section reveal" id="section-03">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Constraints alone are now bigger than total balancing was in 2018</h2>
+    <p class="section-blurb">
+      A direct comparison. The orange bar — money paid in 2024/25 to <em>not</em> generate, or to compensate
+      for those who didn't — exceeds the entire balancing budget from six years earlier. This is what scaling
+      a grid faster than its bones can carry actually looks like in pounds.
+    </p>
+    <div class="chart-frame">
+      <svg id="compare-chart" viewBox="0 0 1100 240"></svg>
+    </div>
+  </div>
+
+  <div class="footer reveal">
+    <div class="footer-text">
+      <strong>Source.</strong> Figures from NESO's
+      <a href="https://www.neso.energy/document/362561/download" target="_blank">2025 Annual Balancing Costs Report</a>
+      and the Monthly Balancing Services Summary on the
+      <a href="https://www.neso.energy/data-portal/mbss" target="_blank">NESO Data Portal</a>.
+      Category breakdown for FY 2024/25 is approximate, derived from the Annual Report's stated totals and
+      historical proportions; the MBSS data files contain the definitive month-by-month split.
+      <strong>Method.</strong> Categories follow NESO's published taxonomy (Constraints, Reserve, Response,
+      Energy Imbalance, Reactive, Restoration, Minor Components). The 2030 projection range is from NESO's
+      May 2024 Annual Balancing Costs Report and Future Projections.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ─── DATA ────────────────────────────────────────────────────────── */
+const annualData = [
+  { year: '2018/19', total: 1.4, constraints: 0.35, other: 1.05, note: null },
+  { year: '2019/20', total: 1.5, constraints: 0.42, other: 1.08, note: null },
+  { year: '2020/21', total: 2.1, constraints: 0.62, other: 1.48, note: null },
+  { year: '2021/22', total: 3.1, constraints: 0.84, other: 2.26, note: null },
+  { year: '2022/23', total: 4.1, constraints: 1.04, other: 3.06, note: 'Gas crisis peak' },
+  { year: '2023/24', total: 2.4, constraints: 1.04, other: 1.36, note: null },
+  { year: '2024/25', total: 2.7, constraints: 1.70, other: 1.00, note: 'Latest year' }
+];
+
+const breakdownData = [
+  { key: 'constraints', label: 'Constraints',        value: 1700, hex: '#c4451c' },
+  { key: 'reserve',     label: 'Reserve',            value: 380,  hex: '#4a7a8c' },
+  { key: 'response',    label: 'Response',           value: 230,  hex: '#6b8e4e' },
+  { key: 'energy',      label: 'Energy imbalance',   value: 180,  hex: '#7d5a8c' },
+  { key: 'reactive',    label: 'Reactive (voltage)', value: 130,  hex: '#b87a5a' },
+  { key: 'restoration', label: 'Restoration',        value: 50,   hex: '#5a8a9c' },
+  { key: 'other',       label: 'Minor components',   value: 30,   hex: '#9c8866' }
+];
+
+/* ─── TOOLTIP ─────────────────────────────────────────────────────── */
+const tooltipEl = document.getElementById('tooltip');
+
+function showTooltip(html, event) {
+  tooltipEl.innerHTML = html;
+  tooltipEl.classList.add('visible');
+  positionTooltip(event);
+}
+function positionTooltip(event) {
+  const x = event.clientX, y = event.clientY;
+  tooltipEl.style.top = y + 'px';
+  tooltipEl.style.transform = 'translateY(-50%)';
+  const flip = x + tooltipEl.offsetWidth + 32 > window.innerWidth;
+  tooltipEl.style.left = (flip ? x - tooltipEl.offsetWidth - 16 : x + 16) + 'px';
+}
+function hideTooltip() { tooltipEl.classList.remove('visible'); }
+
+/* ─── CHART 1: Seven-year trend ───────────────────────────────────── */
+function drawTrendChart(animate) {
+  const svg = d3.select('#trend-chart');
+  const W = 1100, H = 400;
+  const margin = { top: 50, right: 130, bottom: 50, left: 70 };
+  const w = W - margin.left - margin.right, h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(annualData.map(d => d.year)).range([0, w]).padding(0.3);
+  const y = d3.scaleLinear().domain([0, 8.5]).range([h, 0]);
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w - 80).tickFormat('').ticks(5));
+
+  // Stacked bars: constraints (accent) + other (ink-soft)
+  const stackKeys = ['other', 'constraints'];
+  const stack = d3.stack().keys(stackKeys);
+  const series = stack(annualData.map(d => ({ year: d.year, constraints: d.constraints, other: d.other, _ref: d })));
+
+  const colors = { constraints: '#c4451c', other: '#3d3d3d' };
+
+  series.forEach((layer, li) => {
+    const rects = g.selectAll(`.bar-${layer.key}`)
+      .data(layer)
+      .join('rect')
+      .attr('class', `bar-seg bar-${layer.key}`)
+      .attr('x', d => x(d.data.year))
+      .attr('width', x.bandwidth())
+      .attr('fill', colors[layer.key])
+      .attr('opacity', d => d.data.year === '2024/25' ? 1 : (layer.key === 'constraints' ? 0.85 : 0.6));
+
+    if (animate) {
+      rects.attr('y', h).attr('height', 0)
+        .transition().duration(750).delay((d, i) => i * 90 + li * 60).ease(d3.easeCubicOut)
+        .attr('y', d => y(d[1]))
+        .attr('height', d => y(d[0]) - y(d[1]));
+    } else {
+      rects.attr('y', d => y(d[1])).attr('height', d => y(d[0]) - y(d[1]));
+    }
+  });
+
+  // Invisible hover rects (full bar height for easy targeting)
+  const hoverRects = g.selectAll('.bar-hover')
+    .data(annualData)
+    .join('rect')
+    .attr('class', 'bar-hover')
+    .attr('x', d => x(d.year))
+    .attr('y', 0)
+    .attr('width', x.bandwidth())
+    .attr('height', h)
+    .attr('fill', 'transparent')
+    .style('cursor', 'pointer');
+
+  hoverRects
+    .on('mouseenter', function(event, d) {
+      g.selectAll('.bar-seg').attr('opacity', 0.25);
+      g.selectAll(`.bar-constraints`).filter((s) => s.data.year === d.year).attr('opacity', 1);
+      g.selectAll(`.bar-other`).filter((s) => s.data.year === d.year).attr('opacity', 1);
+    })
+    .on('mousemove', function(event, d) {
+      const html = `
+        <div class="tooltip-title">${d.year}</div>
+        <div class="tooltip-row"><span>Total cost</span><span class="val">£${d.total.toFixed(1)}bn</span></div>
+        <div class="tooltip-row"><span>↳ Constraints</span><span class="val">£${d.constraints.toFixed(2)}bn</span></div>
+        <div class="tooltip-row"><span>↳ Other costs</span><span class="val">£${d.other.toFixed(2)}bn</span></div>
+        <div class="tooltip-row"><span>Constraint share</span><span class="val">${Math.round(d.constraints / d.total * 100)}%</span></div>
+        ${d.note ? `<div class="tooltip-note">${d.note}</div>` : ''}
+      `;
+      showTooltip(html, event);
+      positionTooltip(event);
+    })
+    .on('mouseleave', function() {
+      g.selectAll('.bar-seg').attr('opacity', d => {
+        if (d && d.data) return d.data.year === '2024/25' ? 1 : 0.72;
+        return 0.72;
+      });
+      hideTooltip();
+    });
+
+  // Value labels
+  const labelGroup = g.append('g').style('opacity', animate ? 0 : 1);
+  annualData.forEach(d => {
+    labelGroup.append('text')
+      .attr('x', x(d.year) + x.bandwidth() / 2)
+      .attr('y', y(d.total) - 10)
+      .attr('text-anchor', 'middle')
+      .style('font-family', 'Fraunces, serif')
+      .style('font-size', '18px')
+      .style('font-weight', '500')
+      .style('fill', 'var(--ink)')
+      .style('pointer-events', 'none')
+      .text('£' + d.total.toFixed(1) + 'bn');
+  });
+
+  if (animate) {
+    labelGroup.transition().delay(annualData.length * 90 + 350).duration(400).style('opacity', 1);
+  }
+
+  // Gas crisis annotation
+  const spike = annualData.find(d => d.year === '2022/23');
+  g.append('text')
+    .attr('x', x(spike.year) + x.bandwidth() / 2)
+    .attr('y', y(spike.total) + 28)
+    .attr('text-anchor', 'middle')
+    .style('font-family', 'Fraunces, serif').style('font-style', 'italic')
+    .style('font-size', '12px').style('fill', 'var(--paper)').style('font-weight', '500')
+    .style('pointer-events', 'none')
+    .text('Gas crisis peak');
+
+  // Legend for stacked colours
+  const legData = [{ label: 'Constraints', color: '#c4451c' }, { label: 'Other costs', color: '#3d3d3d' }];
+  legData.forEach((l, i) => {
+    g.append('rect').attr('x', i * 130).attr('y', h + 34).attr('width', 12).attr('height', 12)
+      .attr('fill', l.color).attr('rx', 2);
+    g.append('text').attr('x', i * 130 + 18).attr('y', h + 44)
+      .style('font-family', 'JetBrains Mono, monospace').style('font-size', '10px')
+      .style('fill', 'var(--ink-muted)').text(l.label);
+  });
+
+  // 2030 projection bracket
+  const projX = w + 30, projY1 = y(8), projY2 = y(4);
+  g.append('line').attr('x1', projX).attr('y1', projY1).attr('x2', projX).attr('y2', projY2)
+    .attr('stroke', '#c4451c').attr('stroke-width', 4).attr('opacity', 0.5);
+  [projY1, projY2].forEach(py => {
+    g.append('line').attr('x1', projX - 6).attr('y1', py).attr('x2', projX + 6).attr('y2', py)
+      .attr('stroke', '#c4451c').attr('stroke-width', 2);
+  });
+  g.append('text').attr('x', projX + 14).attr('y', projY1 + 4)
+    .style('font-family', 'JetBrains Mono, monospace').style('font-size', '10px')
+    .style('text-transform', 'uppercase').style('letter-spacing', '0.1em').style('fill', '#c4451c')
+    .text('2030 forecast');
+  g.append('text').attr('x', projX + 14).attr('y', projY1 + 22)
+    .style('font-family', 'Fraunces, serif').style('font-style', 'italic')
+    .style('font-size', '15px').style('font-weight', '500').style('fill', 'var(--ink)').text('£4–8bn');
+  g.append('text').attr('x', projX + 14).attr('y', projY1 + 40)
+    .style('font-family', 'Inter Tight, sans-serif').style('font-size', '11px')
+    .style('fill', 'var(--ink-muted)').text('projected');
+
+  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x));
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => '£' + d + 'bn'));
+}
+
+/* ─── CHART 2: Breakdown ──────────────────────────────────────────── */
+function drawBreakdownChart(animate) {
+  const svg = d3.select('#breakdown-chart');
+  const W = 1100, H = 320;
+  const margin = { top: 30, right: 40, bottom: 50, left: 180 };
+  const w = W - margin.left - margin.right, h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const sorted = [...breakdownData].sort((a, b) => b.value - a.value);
+  const total = d3.sum(sorted, d => d.value);
+
+  const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.value) * 1.18]).range([0, w]);
+  const y = d3.scaleBand().domain(sorted.map(d => d.label)).range([0, h]).padding(0.18);
+
+  const bars = g.selectAll('.bar')
+    .data(sorted)
+    .join('rect')
+    .attr('class', 'bar')
+    .attr('y', d => y(d.label))
+    .attr('height', y.bandwidth())
+    .attr('fill', d => d.hex)
+    .style('cursor', 'pointer')
+    .attr('width', animate ? 0 : d => x(d.value));
+
+  if (animate) {
+    bars.transition().duration(750).delay((d, i) => i * 80).ease(d3.easeCubicOut)
+      .attr('width', d => x(d.value));
+  }
+
+  bars
+    .on('mouseenter', function() { d3.selectAll('.bar').attr('opacity', 0.3); d3.select(this).attr('opacity', 1); })
+    .on('mousemove', function(event, d) {
+      d3.selectAll('.bar').attr('opacity', 0.3);
+      d3.select(this).attr('opacity', 1);
+      showTooltip(`
+        <div class="tooltip-title">${d.label}</div>
+        <div class="tooltip-row"><span>Cost</span><span class="val">£${d.value}m</span></div>
+        <div class="tooltip-row"><span>Share of total</span><span class="val">${Math.round(d.value / total * 100)}%</span></div>
+        <div class="tooltip-row"><span>Share of constraints</span><span class="val">${d.key === 'constraints' ? '100%' : 'n/a'}</span></div>
+      `, event);
+    })
+    .on('mouseleave', function() { d3.selectAll('.bar').attr('opacity', 1); hideTooltip(); });
+
+  // Value labels
+  const valueLabels = g.selectAll('.bar-label')
+    .data(sorted)
+    .join('text')
+    .attr('class', 'bar-label')
+    .attr('x', d => x(d.value) + 10)
+    .attr('y', d => y(d.label) + y.bandwidth() / 2 + 6)
+    .style('font-family', 'Fraunces, serif').style('font-size', '18px')
+    .style('font-weight', '500').style('fill', 'var(--ink)').style('pointer-events', 'none')
+    .style('opacity', animate ? 0 : 1)
+    .text(d => '£' + d.value + 'm');
+
+  if (animate) {
+    valueLabels.transition().delay(sorted.length * 80 + 250).duration(350).style('opacity', 1);
+  }
+
+  g.selectAll('.bar-pct')
+    .data(sorted)
+    .join('text')
+    .attr('class', 'bar-pct')
+    .attr('x', d => x(d.value) - 12)
+    .attr('y', d => y(d.label) + y.bandwidth() / 2 + 5)
+    .attr('text-anchor', 'end')
+    .style('font-family', 'JetBrains Mono, monospace').style('font-size', '13px')
+    .style('font-weight', '500').style('fill', 'var(--paper)').style('pointer-events', 'none')
+    .style('opacity', d => x(d.value) > 80 ? 1 : 0)
+    .text(d => Math.round(d.value / total * 100) + '%');
+
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(12)).select('.domain').remove();
+  g.selectAll('.axis text')
+    .style('font-family', 'Inter Tight, sans-serif').style('font-size', '13px').style('fill', 'var(--ink)');
+  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d => '£' + d + 'm'));
+}
+
+/* ─── CHART 3: Compare ────────────────────────────────────────────── */
+function drawCompareChart(animate) {
+  const svg = d3.select('#compare-chart');
+  const W = 1100, H = 240;
+  const margin = { top: 30, right: 200, bottom: 30, left: 40 };
+  const w = W - margin.left - margin.right, h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const compareData = [
+    { label: 'TOTAL balancing cost · FY 2018/19', value: 1.4, color: '#3d3d3d', sub: 'every category combined' },
+    { label: 'CONSTRAINTS only · FY 2024/25',     value: 1.7, color: '#c4451c', sub: 'just the constraints line' }
+  ];
+
+  const x = d3.scaleLinear().domain([0, 2]).range([0, w]);
+  const y = d3.scaleBand().domain(compareData.map(d => d.label)).range([0, h]).padding(0.25);
+
+  const bars = g.selectAll('.bar')
+    .data(compareData)
+    .join('rect')
+    .attr('class', 'bar')
+    .attr('y', d => y(d.label))
+    .attr('height', y.bandwidth())
+    .attr('fill', d => d.color)
+    .attr('width', animate ? 0 : d => x(d.value));
+
+  if (animate) {
+    bars.transition().duration(950).delay((d, i) => i * 300).ease(d3.easeCubicOut)
+      .attr('width', d => x(d.value));
+  }
+
+  const amountLabels = g.selectAll('.bar-amount')
+    .data(compareData)
+    .join('text')
+    .attr('class', 'bar-amount')
+    .attr('x', d => x(d.value) + 16)
+    .attr('y', d => y(d.label) + y.bandwidth() / 2 + 14)
+    .style('font-family', 'Fraunces, serif').style('font-size', '36px')
+    .style('font-weight', '500').style('fill', 'var(--ink)').style('pointer-events', 'none')
+    .style('opacity', animate ? 0 : 1)
+    .text(d => '£' + d.value.toFixed(1) + 'bn');
+
+  if (animate) {
+    amountLabels.transition().delay((d, i) => i * 300 + 750).duration(400).style('opacity', 1);
+  }
+
+  g.selectAll('.bar-label').data(compareData).join('text').attr('class', 'bar-label')
+    .attr('x', 14).attr('y', d => y(d.label) + 22)
+    .style('font-family', 'JetBrains Mono, monospace').style('font-size', '10px')
+    .style('text-transform', 'uppercase').style('letter-spacing', '0.12em')
+    .style('fill', 'var(--paper)').style('font-weight', '500').style('pointer-events', 'none')
+    .text(d => d.label);
+
+  g.selectAll('.bar-sub').data(compareData).join('text').attr('class', 'bar-sub')
+    .attr('x', 14).attr('y', d => y(d.label) + y.bandwidth() - 14)
+    .style('font-family', 'Fraunces, serif').style('font-style', 'italic')
+    .style('font-size', '13px').style('fill', 'var(--paper-warm)').style('opacity', 0.85)
+    .style('pointer-events', 'none')
+    .text(d => d.sub);
+}
+
+/* ─── LEGEND ──────────────────────────────────────────────────────── */
+function buildLegend() {
+  const legend = d3.select('#legend');
+  legend.html('');
+  const total = d3.sum(breakdownData, d => d.value);
+  breakdownData.forEach(c => {
+    const item = legend.append('div').attr('class', 'legend-item');
+    item.append('div').attr('class', 'legend-swatch').style('background', c.hex);
+    item.append('span').text(c.label);
+    item.append('span').attr('class', 'legend-pct')
+      .text('£' + c.value + 'm · ' + Math.round(c.value / total * 100) + '%');
+  });
+}
+
+/* ─── ANIMATED COUNTERS ───────────────────────────────────────────── */
+function animateCounter(el, target, decimals, suffix, duration) {
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = (eased * target).toFixed(decimals) + suffix;
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = target.toFixed(decimals) + suffix;
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateHero() {
+  animateCounter(document.getElementById('hero-count'), 1.7, 1, '', 1400);
+}
+
+function animateStats() {
+  document.querySelectorAll('.count-up').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const decimals = parseInt(el.dataset.decimals) || 0;
+    const suffix = el.dataset.suffix || '';
+    animateCounter(el, target, decimals, suffix, 1200);
+  });
+}
+
+/* ─── INTERSECTION OBSERVER ───────────────────────────────────────── */
+const drawn = { trend: false, breakdown: false, compare: false };
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const el = entry.target;
+    el.classList.add('visible');
+
+    if (el.id === 'hero-number') animateHero();
+    if (el.id === 'stats-strip') animateStats();
+    if (el.id === 'section-01' && !drawn.trend)     { drawn.trend = true;     drawTrendChart(true); }
+    if (el.id === 'section-02' && !drawn.breakdown) { drawn.breakdown = true; drawBreakdownChart(true); buildLegend(); }
+    if (el.id === 'section-03' && !drawn.compare)   { drawn.compare = true;   drawCompareChart(true); }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal, #hero-number, #stats-strip, #section-01, #section-02, #section-03')
+  .forEach(el => observer.observe(el));
+
+window.addEventListener('resize', () => {
+  drawTrendChart(false);
+  drawBreakdownChart(false);
+  drawCompareChart(false);
+});
+</script>
+
+</body>
+</html>
