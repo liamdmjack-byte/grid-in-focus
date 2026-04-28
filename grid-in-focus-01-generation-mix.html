@@ -83,12 +83,46 @@
     font-style: italic;
     font-size: 18px;
     letter-spacing: -0.01em;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s;
   }
+
+  .series-mark:hover { opacity: 0.65; }
 
   .series-mark span {
     font-style: normal;
     color: var(--accent);
   }
+
+  /* Back button */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    text-decoration: none;
+    margin-bottom: 40px;
+    padding: 8px 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .back-btn:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .back-btn::before {
+    content: '←';
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .back-btn:hover::before { transform: translateX(-4px); }
 
   .meta {
     font-family: 'JetBrains Mono', monospace;
@@ -454,10 +488,12 @@
 
   <!-- MASTHEAD -->
   <div class="masthead">
-    <div class="series-mark">The Grid <span>in Focus</span></div>
+    <a href="index.html" class="series-mark">The Grid <span>in Focus</span></a>
     <div class="meta loading" id="meta-stamp">Fetching live data</div>
   </div>
   <hr class="thin-rule">
+
+  <a href="index.html" class="back-btn">Return to Home</a>
 
   <!-- HEADLINE -->
   <h1 class="headline">Where did Britain's electricity <em>actually</em> come from this month?</h1>
