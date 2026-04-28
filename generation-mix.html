@@ -621,7 +621,7 @@
   <div class="insight">
     <div class="insight-label">The signal in the noise</div>
     <div class="insight-text">
-      On three separate days this month, wind alone met more than 60% of demand. On three others, gas was forced above 40%.
+      On three separate days in April, wind alone met more than 60% of demand. On three others, gas was forced above 40%.
       The grid's job is to make those days look the same to the customer.
     </div>
   </div>
@@ -913,7 +913,7 @@ function drawStackChart() {
   // Axes
   g.append('g').attr('class', 'axis')
     .attr('transform', `translate(0,${h})`)
-    .call(d3.axisBottom(x).ticks(d3.timeDay.every(3)).tickFormat(d3.timeFormat('%d %b')));
+    .call(d3.axisBottom(x).ticks(d3.timeDay.every(5)).tickFormat(d3.timeFormat('%d %b')));
   g.append('g').attr('class', 'axis')
     .call(d3.axisLeft(y).ticks(5).tickFormat(d => (d * 100) + '%'));
 }
