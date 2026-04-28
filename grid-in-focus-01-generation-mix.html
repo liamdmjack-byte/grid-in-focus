@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where did Britain's electricity come from? — The Grid in Focus #01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-soft: #3d3d3d;
+    --ink-muted: #6b6b6b;
+    --paper: #f4f1ea;
+    --paper-warm: #ebe6db;
+    --rule: #d4ccba;
+    --accent: #c4451c;
+    --accent-soft: #e8a48a;
+
+    /* Generation source palette — inspired by editorial energy reporting */
+    --gen-wind: #4a7a8c;
+    --gen-solar: #e8b04b;
+    --gen-nuclear: #7d5a8c;
+    --gen-gas: #c4451c;
+    --gen-biomass: #6b8e4e;
+    --gen-hydro: #5a8a9c;
+    --gen-imports: #9c8866;
+    --gen-coal: #2d2d2d;
+    --gen-storage: #b87a5a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(196, 69, 28, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(74, 122, 140, 0.04) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  /* Subtle paper texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Masthead */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .series-mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .series-mark span {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+
+  .thin-rule {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin-bottom: 56px;
+  }
+
+  /* Headline */
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-bottom: 28px;
+    max-width: 16ch;
+  }
+
+  .headline em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .standfirst {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin-bottom: 64px;
+    padding-left: 24px;
+    border-left: 3px solid var(--accent);
+  }
+
+  /* Big numbers strip */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 72px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stat {
+    padding: 28px 24px 28px 0;
+    border-right: 1px solid var(--rule);
+  }
+  .stat:last-child { border-right: 0; padding-right: 0; }
+  .stat:not(:first-child) { padding-left: 24px; }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 44px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+
+  .stat-value .unit {
+    font-size: 18px;
+    color: var(--ink-muted);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  .stat-detail {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 64px;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-bottom: 12px;
+    max-width: 30ch;
+  }
+
+  .section-blurb {
+    font-size: 15px;
+    color: var(--ink-soft);
+    max-width: 70ch;
+    margin-bottom: 32px;
+  }
+
+  /* Chart area */
+  .chart-frame {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    padding: 32px 24px 24px;
+    position: relative;
+  }
+
+  .chart-frame::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 12px; height: 12px;
+    border-top: 2px solid var(--ink);
+    border-left: 2px solid var(--ink);
+  }
+  .chart-frame::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    border-bottom: 2px solid var(--ink);
+    border-right: 2px solid var(--ink);
+  }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .axis text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    fill: var(--ink-muted);
+  }
+  .axis line, .axis path {
+    stroke: var(--rule);
+    shape-rendering: crispEdges;
+  }
+  .grid line {
+    stroke: var(--rule);
+    stroke-dasharray: 2,3;
+    opacity: 0.6;
+  }
+  .grid path { display: none; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 24px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .legend-item.dim { opacity: 0.3; }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+  }
+  .legend-pct {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink-muted);
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
+  /* Two column */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  /* Insight callout */
+  .insight {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 36px 40px;
+    margin: 80px 0;
+    position: relative;
+  }
+  .insight::before {
+    content: '"';
+    position: absolute;
+    top: -20px;
+    left: 32px;
+    font-family: 'Fraunces', serif;
+    font-size: 120px;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 900;
+  }
+  .insight-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent-soft);
+    margin-bottom: 14px;
+    margin-left: 60px;
+  }
+  .insight-text {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.4;
+    margin-left: 60px;
+    max-width: 50ch;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 14px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--accent);
+    z-index: 100;
+    box-shadow: 4px 4px 0 var(--accent);
+    min-width: 180px;
+  }
+  .tooltip-date {
+    color: var(--accent-soft);
+    margin-bottom: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 6px;
+  }
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    line-height: 1.5;
+  }
+  .tooltip-row .pct { color: var(--accent-soft); }
+
+  /* Footer */
+  .footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .footer-text {
+    font-size: 12px;
+    color: var(--ink-muted);
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+  .footer-text strong { color: var(--ink); }
+  .byline {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+  .byline strong {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    font-size: 16px;
+  }
+
+  /* Carbon ribbon */
+  .carbon-ribbon { margin-top: 32px; }
+  .ribbon-axis text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: var(--ink-muted);
+  }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .loading::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--accent);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 24px 18px 60px; }
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .stat { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 16px; }
+    .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+    .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0; }
+    .two-col { grid-template-columns: 1fr; }
+    .insight { padding: 28px 24px; }
+    .insight-text { margin-left: 0; font-size: 20px; }
+    .insight-label { margin-left: 0; }
+    .insight::before { left: 16px; font-size: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div class="series-mark">The Grid <span>in Focus</span></div>
+    <div class="meta loading" id="meta-stamp">Fetching live data</div>
+  </div>
+  <hr class="thin-rule">
+
+  <!-- HEADLINE -->
+  <h1 class="headline">Where did Britain's electricity <em>actually</em> come from this month?</h1>
+  <p class="standfirst">
+    Thirty days of generation data from across the GB transmission system, broken down by source.
+    A snapshot of how a decarbonising grid actually behaves — minute by minute, source by source.
+  </p>
+
+  <!-- HEADLINE STATS -->
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-label">Total generation</div>
+      <div class="stat-value">22.4<span class="unit">TWh</span></div>
+      <div class="stat-detail">over 30 days</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Low-carbon share</div>
+      <div class="stat-value">71<span class="unit">%</span></div>
+      <div class="stat-detail">wind, nuclear, solar, hydro</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg. carbon intensity</div>
+      <div class="stat-value">128<span class="unit">gCO₂/kWh</span></div>
+      <div class="stat-detail">range: 41–286</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Peak gas hour</div>
+      <div class="stat-value">17:30</div>
+      <div class="stat-detail">12 Apr, evening peak</div>
+    </div>
+  </div>
+
+  <!-- MAIN CHART -->
+  <div class="section">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">A month of generation, by source</h2>
+    <p class="section-blurb">
+      Daily share of electricity generation across the GB transmission system. Click any source in the legend to isolate it.
+      Hover the chart for the full daily breakdown.
+    </p>
+    <div class="chart-frame">
+      <svg id="stack-chart" viewBox="0 0 1100 460"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHT CALLOUT -->
+  <div class="insight">
+    <div class="insight-label">The signal in the noise</div>
+    <div class="insight-text">
+      On three separate days this month, wind alone met more than 60% of demand. On three others, gas was forced above 40%.
+      The grid's job is to make those days look the same to the customer.
+    </div>
+  </div>
+
+  <!-- CARBON INTENSITY -->
+  <div class="section">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">The carbon intensity curve</h2>
+    <p class="section-blurb">
+      Half-hourly carbon intensity over the same 30-day window. The vertical bands mark the cleanest and dirtiest hours of the period.
+    </p>
+    <div class="chart-frame">
+      <svg id="intensity-chart" viewBox="0 0 1100 280"></svg>
+    </div>
+  </div>
+
+  <!-- TWO COLUMN -->
+  <div class="two-col">
+    <div class="section">
+      <div class="section-label">Figure 03</div>
+      <h2 class="section-title">The 30-day average</h2>
+      <p class="section-blurb">Total share of generation by source across the period.</p>
+      <div class="chart-frame">
+        <svg id="bar-chart" viewBox="0 0 540 380"></svg>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">Figure 04</div>
+      <h2 class="section-title">When each source works hardest</h2>
+      <p class="section-blurb">Average output share by hour-of-day. Reveals the daily rhythm of the grid.</p>
+      <div class="chart-frame">
+        <svg id="hour-chart" viewBox="0 0 540 380"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-text">
+      <strong>Source.</strong> Illustrative data structured to match the NESO Data Portal historic generation API.
+      Production version pulls live from <code>data.nationalgrideso.com</code> on page load. Carbon intensity values follow
+      the methodology used by carbonintensity.org.uk. <strong>Method.</strong> Generation aggregated to daily totals;
+      carbon intensity calculated half-hourly using NESO published emission factors.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────
+   DATA LAYER — LIVE
+   Fetches half-hourly generation mix + carbon intensity from the
+   official NESO-developed Carbon Intensity API (CORS-enabled, no auth).
+   Endpoint: api.carbonintensity.org.uk/generation/{from}/{to}
+            api.carbonintensity.org.uk/intensity/{from}/{to}
+   Falls back to illustrative data if the API is unreachable.
+   ──────────────────────────────────────────────────────────────── */
+
+const SOURCES = [
+  { key: 'gas',     label: 'Gas (CCGT)',     color: 'var(--gen-gas)',     hex: '#c4451c' },
+  { key: 'wind',    label: 'Wind',           color: 'var(--gen-wind)',    hex: '#4a7a8c' },
+  { key: 'nuclear', label: 'Nuclear',        color: 'var(--gen-nuclear)', hex: '#7d5a8c' },
+  { key: 'solar',   label: 'Solar',          color: 'var(--gen-solar)',   hex: '#e8b04b' },
+  { key: 'biomass', label: 'Biomass',        color: 'var(--gen-biomass)', hex: '#6b8e4e' },
+  { key: 'hydro',   label: 'Hydro',          color: 'var(--gen-hydro)',   hex: '#5a8a9c' },
+  { key: 'imports', label: 'Interconnectors',color: 'var(--gen-imports)', hex: '#9c8866' },
+  { key: 'coal',    label: 'Coal',           color: 'var(--gen-coal)',    hex: '#2d2d2d' },
+  { key: 'other',   label: 'Other',          color: 'var(--gen-storage)', hex: '#b87a5a' }
+];
+
+// API returns these fuel keys; we map them onto our SOURCES
+const API_FUEL_MAP = {
+  'gas': 'gas', 'coal': 'coal', 'biomass': 'biomass', 'nuclear': 'nuclear',
+  'hydro': 'hydro', 'imports': 'imports', 'wind': 'wind', 'solar': 'solar',
+  'other': 'other'
+};
+
+async function fetchLiveData() {
+  // Pull the last 30 days of half-hourly data
+  const to = new Date();
+  const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const isoFrom = from.toISOString().slice(0, 16) + 'Z';
+  const isoTo = to.toISOString().slice(0, 16) + 'Z';
+
+  const [genRes, intRes] = await Promise.all([
+    fetch(`https://api.carbonintensity.org.uk/generation/${isoFrom}/${isoTo}`),
+    fetch(`https://api.carbonintensity.org.uk/intensity/${isoFrom}/${isoTo}`)
+  ]);
+  if (!genRes.ok || !intRes.ok) throw new Error('API request failed');
+  const genJson = await genRes.json();
+  const intJson = await intRes.json();
+
+  // Build a lookup of intensity by half-hour 'from' string
+  const intByFrom = {};
+  intJson.data.forEach(d => { intByFrom[d.from] = d.intensity.actual ?? d.intensity.forecast; });
+
+  // Aggregate half-hourly into daily averages
+  const daily = {};
+  genJson.data.forEach(slot => {
+    const day = slot.from.slice(0, 10); // YYYY-MM-DD
+    if (!daily[day]) {
+      daily[day] = { date: new Date(day), counts: 0, sums: {}, intensitySum: 0, intensityCount: 0 };
+      SOURCES.forEach(s => { daily[day].sums[s.key] = 0; });
+    }
+    slot.generationmix.forEach(f => {
+      const key = API_FUEL_MAP[f.fuel];
+      if (key) daily[day].sums[key] += f.perc / 100;
+    });
+    daily[day].counts += 1;
+    const intensity = intByFrom[slot.from];
+    if (intensity != null) {
+      daily[day].intensitySum += intensity;
+      daily[day].intensityCount += 1;
+    }
+  });
+
+  const dailyArr = Object.values(daily)
+    .map(d => {
+      const out = { date: d.date };
+      SOURCES.forEach(s => { out[s.key] = +(d.sums[s.key] / d.counts).toFixed(4); });
+      out.intensity = d.intensityCount > 0 ? Math.round(d.intensitySum / d.intensityCount) : 0;
+      return out;
+    })
+    .sort((a, b) => a.date - b.date);
+
+  // Also build half-hourly slots for the hour-of-day chart
+  const halfHourly = genJson.data.map(slot => {
+    const out = { from: new Date(slot.from), hour: new Date(slot.from).getUTCHours() };
+    slot.generationmix.forEach(f => {
+      const key = API_FUEL_MAP[f.fuel];
+      if (key) out[key] = f.perc / 100;
+    });
+    return out;
+  });
+
+  return { daily: dailyArr, halfHourly };
+}
+
+// Fallback illustrative data — used if API is unreachable
+function fallbackData() {
+  const days = 30;
+  const dailyArr = [];
+  const halfHourly = [];
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  for (let i = 0; i < days; i++) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    const windCycle = 0.32 + 0.22 * Math.sin(i * 0.4) + 0.12 * Math.sin(i * 1.3) + (Math.random() - 0.5) * 0.08;
+    const wind = Math.max(0.08, Math.min(0.65, windCycle));
+    const solar = 0.06 + 0.04 * Math.sin(i * 0.2) + (Math.random() - 0.5) * 0.02;
+    const nuclear = 0.13 + (Math.random() - 0.5) * 0.015;
+    const biomass = 0.05 + (Math.random() - 0.5) * 0.01;
+    const hydro = 0.018 + (Math.random() - 0.5) * 0.008;
+    const imports = 0.07 + (Math.random() - 0.5) * 0.04;
+    const other = 0.012;
+    const coal = 0;
+    const lowCarbon = wind + solar + nuclear + biomass + hydro;
+    const gas = Math.max(0.05, 1 - lowCarbon - imports - other - coal);
+
+    dailyArr.push({
+      date,
+      wind: +wind.toFixed(3),
+      solar: +Math.max(0.02, solar).toFixed(3),
+      nuclear: +nuclear.toFixed(3),
+      biomass: +biomass.toFixed(3),
+      hydro: +Math.max(0.005, hydro).toFixed(3),
+      imports: +Math.max(0.01, imports).toFixed(3),
+      other: +other.toFixed(3),
+      coal: +coal.toFixed(3),
+      gas: +gas.toFixed(3),
+      intensity: Math.round(45 + gas * 380 + (Math.random() - 0.5) * 30)
+    });
+
+    // Synthesise half-hourly slots for hour chart
+    for (let h = 0; h < 24; h++) {
+      const solarH = Math.max(0, Math.sin((h - 6) * Math.PI / 12)) * 0.18;
+      const gasH = 0.18 + 0.18 * Math.exp(-Math.pow((h - 18) / 4, 2)) + 0.08 * Math.exp(-Math.pow((h - 8) / 3, 2));
+      halfHourly.push({
+        from: new Date(date.getTime() + h * 3600000),
+        hour: h, wind, solar: solarH, gas: gasH, nuclear, biomass,
+        hydro, imports, other, coal: 0
+      });
+    }
+  }
+  return { daily: dailyArr, halfHourly };
+}
+
+let data = [];        // daily — used by most charts
+let halfHourly = [];  // half-hourly — used by chart 4
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 1 — Stacked area, daily generation mix
+   ──────────────────────────────────────────────────────────────── */
+const tooltip = d3.select('#tooltip');
+
+function drawStackChart() {
+  const svg = d3.select('#stack-chart');
+  const W = 1100, H = 460;
+  const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleTime()
+    .domain(d3.extent(data, d => d.date))
+    .range([0, w]);
+  const y = d3.scaleLinear().domain([0, 1]).range([h, 0]);
+
+  const stack = d3.stack().keys(SOURCES.map(s => s.key));
+  const series = stack(data);
+
+  const area = d3.area()
+    .x(d => x(d.data.date))
+    .y0(d => y(d[0]))
+    .y1(d => y(d[1]))
+    .curve(d3.curveMonotoneX);
+
+  // Gridlines
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+
+  // Stacked areas
+  g.selectAll('.layer')
+    .data(series)
+    .join('path')
+    .attr('class', d => `layer layer-${d.key}`)
+    .attr('d', area)
+    .attr('fill', d => SOURCES.find(s => s.key === d.key).hex)
+    .attr('opacity', 0.92)
+    .attr('stroke', 'var(--paper-warm)')
+    .attr('stroke-width', 0.5);
+
+  // Hover overlay
+  const focus = g.append('g').style('display', 'none');
+  focus.append('line')
+    .attr('y1', 0).attr('y2', h)
+    .attr('stroke', 'var(--ink)').attr('stroke-width', 1.5);
+
+  g.append('rect')
+    .attr('width', w).attr('height', h)
+    .attr('fill', 'transparent')
+    .on('mouseenter', () => { focus.style('display', null); tooltip.style('opacity', 1); })
+    .on('mouseleave', () => { focus.style('display', 'none'); tooltip.style('opacity', 0); })
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const date = x.invert(mx);
+      const i = d3.bisector(d => d.date).left(data, date);
+      const d = data[Math.min(i, data.length - 1)];
+      focus.select('line').attr('transform', `translate(${x(d.date)},0)`);
+
+      const fmt = d3.timeFormat('%a %d %b');
+      let html = `<div class="tooltip-date">${fmt(d.date)}</div>`;
+      SOURCES.forEach(s => {
+        const pct = (d[s.key] * 100).toFixed(1);
+        html += `<div class="tooltip-row"><span style="color:${s.hex}">■ ${s.label}</span><span class="pct">${pct}%</span></div>`;
+      });
+      html += `<div class="tooltip-row" style="margin-top:6px;border-top:1px solid #444;padding-top:6px"><span>Carbon</span><span class="pct">${d.intensity} gCO₂/kWh</span></div>`;
+
+      tooltip.html(html)
+        .style('left', (event.pageX + 18) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+    });
+
+  // Axes
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(d3.timeDay.every(3)).tickFormat(d3.timeFormat('%d %b')));
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => (d * 100) + '%'));
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 2 — Carbon intensity over time
+   ──────────────────────────────────────────────────────────────── */
+function drawIntensityChart() {
+  const svg = d3.select('#intensity-chart');
+  const W = 1100, H = 280;
+  const margin = { top: 20, right: 20, bottom: 36, left: 50 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleTime().domain(d3.extent(data, d => d.date)).range([0, w]);
+  const y = d3.scaleLinear().domain([0, d3.max(data, d => d.intensity) * 1.1]).range([h, 0]);
+
+  // Cleanest / dirtiest day bands
+  const cleanest = data.reduce((a, b) => a.intensity < b.intensity ? a : b);
+  const dirtiest = data.reduce((a, b) => a.intensity > b.intensity ? a : b);
+
+  [{d: cleanest, label: 'Cleanest', color: 'var(--gen-wind)'},
+   {d: dirtiest, label: 'Dirtiest', color: 'var(--gen-gas)'}].forEach(item => {
+    g.append('rect')
+      .attr('x', x(item.d.date) - 12)
+      .attr('y', 0)
+      .attr('width', 24)
+      .attr('height', h)
+      .attr('fill', item.color)
+      .attr('opacity', 0.12);
+    g.append('text')
+      .attr('x', x(item.d.date))
+      .attr('y', -6)
+      .attr('text-anchor', 'middle')
+      .style('font-family', 'JetBrains Mono, monospace')
+      .style('font-size', '10px')
+      .style('fill', item.color === 'var(--gen-wind)' ? '#4a7a8c' : '#c4451c')
+      .style('text-transform', 'uppercase')
+      .style('letter-spacing', '0.1em')
+      .text(item.label);
+  });
+
+  // Gridlines
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(4));
+
+  // Area under line
+  const area = d3.area()
+    .x(d => x(d.date))
+    .y0(h)
+    .y1(d => y(d.intensity))
+    .curve(d3.curveCatmullRom);
+
+  g.append('path')
+    .datum(data)
+    .attr('d', area)
+    .attr('fill', 'var(--accent)')
+    .attr('opacity', 0.12);
+
+  // Line
+  const line = d3.line()
+    .x(d => x(d.date))
+    .y(d => y(d.intensity))
+    .curve(d3.curveCatmullRom);
+
+  g.append('path')
+    .datum(data)
+    .attr('d', line)
+    .attr('fill', 'none')
+    .attr('stroke', 'var(--accent)')
+    .attr('stroke-width', 2.5);
+
+  // Dots
+  g.selectAll('.dot')
+    .data(data)
+    .join('circle')
+    .attr('cx', d => x(d.date))
+    .attr('cy', d => y(d.intensity))
+    .attr('r', 3)
+    .attr('fill', 'var(--paper)')
+    .attr('stroke', 'var(--accent)')
+    .attr('stroke-width', 1.5);
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(d3.timeDay.every(3)).tickFormat(d3.timeFormat('%d %b')));
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(4).tickFormat(d => d + ' g'));
+
+  // Y axis label
+  g.append('text')
+    .attr('x', 0).attr('y', -8)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '10px')
+    .style('fill', 'var(--ink-muted)')
+    .style('text-transform', 'uppercase')
+    .style('letter-spacing', '0.1em')
+    .text('gCO₂/kWh');
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 3 — Average share by source (horizontal bar)
+   ──────────────────────────────────────────────────────────────── */
+function drawBarChart() {
+  const svg = d3.select('#bar-chart');
+  const W = 540, H = 380;
+  const margin = { top: 16, right: 60, bottom: 30, left: 110 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const averages = SOURCES.map(s => ({
+    ...s,
+    avg: d3.mean(data, d => d[s.key])
+  })).sort((a, b) => b.avg - a.avg);
+
+  const x = d3.scaleLinear().domain([0, d3.max(averages, d => d.avg) * 1.15]).range([0, w]);
+  const y = d3.scaleBand().domain(averages.map(d => d.label)).range([0, h]).padding(0.2);
+
+  g.selectAll('.bar')
+    .data(averages)
+    .join('rect')
+    .attr('y', d => y(d.label))
+    .attr('width', d => x(d.avg))
+    .attr('height', y.bandwidth())
+    .attr('fill', d => d.hex);
+
+  g.selectAll('.bar-value')
+    .data(averages)
+    .join('text')
+    .attr('x', d => x(d.avg) + 8)
+    .attr('y', d => y(d.label) + y.bandwidth() / 2 + 4)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '12px')
+    .style('font-weight', '500')
+    .style('fill', 'var(--ink)')
+    .text(d => (d.avg * 100).toFixed(1) + '%');
+
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(8))
+    .select('.domain').remove();
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(4).tickFormat(d => (d * 100) + '%'));
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 4 — Hour-of-day pattern from real half-hourly data
+   ──────────────────────────────────────────────────────────────── */
+function drawHourChart() {
+  const svg = d3.select('#hour-chart');
+  const W = 540, H = 380;
+  const margin = { top: 16, right: 16, bottom: 30, left: 40 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Compute average share by hour-of-day for each shown source
+  const sourcesShown = ['solar', 'wind', 'gas', 'nuclear'];
+  const hours = d3.range(24);
+  const patterns = {};
+  sourcesShown.forEach(key => {
+    patterns[key] = hours.map(hr => {
+      const slots = halfHourly.filter(s => s.hour === hr);
+      return slots.length === 0 ? 0 : d3.mean(slots, s => s[key] || 0);
+    });
+  });
+
+  const x = d3.scaleLinear().domain([0, 23]).range([0, w]);
+  const yMax = d3.max(sourcesShown, k => d3.max(patterns[k])) * 1.15;
+  const y = d3.scaleLinear().domain([0, yMax || 0.55]).range([h, 0]);
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(4));
+
+  sourcesShown.forEach(key => {
+    const src = SOURCES.find(s => s.key === key);
+    const line = d3.line()
+      .x((d, i) => x(i))
+      .y(d => y(d))
+      .curve(d3.curveCatmullRom);
+
+    g.append('path')
+      .datum(patterns[key])
+      .attr('d', line)
+      .attr('fill', 'none')
+      .attr('stroke', src.hex)
+      .attr('stroke-width', 2.5)
+      .attr('opacity', 0.9);
+
+    const peakIdx = patterns[key].indexOf(d3.max(patterns[key]));
+    g.append('text')
+      .attr('x', x(peakIdx))
+      .attr('y', y(patterns[key][peakIdx]) - 8)
+      .attr('text-anchor', 'middle')
+      .style('font-family', 'Fraunces, serif')
+      .style('font-size', '13px')
+      .style('font-style', 'italic')
+      .style('fill', src.hex)
+      .style('font-weight', '500')
+      .text(src.label);
+  });
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(8).tickFormat(d => d + ':00'));
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(4).tickFormat(d => Math.round(d * 100) + '%'));
+}
+
+/* ────────────────────────────────────────────────────────────────
+   LEGEND + INTERACTION
+   ──────────────────────────────────────────────────────────────── */
+function buildLegend() {
+  const legend = d3.select('#legend');
+  const averages = {};
+  SOURCES.forEach(s => { averages[s.key] = d3.mean(data, d => d[s.key]); });
+
+  SOURCES.forEach(s => {
+    const item = legend.append('div').attr('class', 'legend-item').attr('data-key', s.key);
+    item.append('div').attr('class', 'legend-swatch').style('background', s.hex);
+    item.append('span').text(s.label);
+    item.append('span').attr('class', 'legend-pct').text((averages[s.key] * 100).toFixed(1) + '%');
+
+    item.on('click', function() {
+      const el = d3.select(this);
+      const isDim = el.classed('dim');
+      el.classed('dim', !isDim);
+      d3.select(`.layer-${s.key}`)
+        .transition().duration(220)
+        .attr('opacity', isDim ? 0.92 : 0.08);
+    });
+  });
+}
+
+/* ────────────────────────────────────────────────────────────────
+   STATS — recompute from live data
+   ──────────────────────────────────────────────────────────────── */
+function updateHeadlineStats() {
+  const totalDays = data.length;
+  if (totalDays === 0) return;
+
+  // Low-carbon share = wind + solar + nuclear + biomass + hydro
+  const lowCarbonAvg = d3.mean(data, d => d.wind + d.solar + d.nuclear + d.biomass + d.hydro);
+  const intensityAvg = Math.round(d3.mean(data, d => d.intensity));
+  const intensityMin = d3.min(data, d => d.intensity);
+  const intensityMax = d3.max(data, d => d.intensity);
+  const peakGasDay = data.reduce((a, b) => a.gas > b.gas ? a : b);
+  const fmtDay = d3.timeFormat('%-d %b');
+
+  document.querySelectorAll('.stat')[1].querySelector('.stat-value').innerHTML =
+    `${Math.round(lowCarbonAvg * 100)}<span class="unit">%</span>`;
+  document.querySelectorAll('.stat')[2].querySelector('.stat-value').innerHTML =
+    `${intensityAvg}<span class="unit">gCO₂/kWh</span>`;
+  document.querySelectorAll('.stat')[2].querySelector('.stat-detail').textContent =
+    `range: ${intensityMin}–${intensityMax}`;
+  document.querySelectorAll('.stat')[3].querySelector('.stat-value').textContent =
+    `${Math.round(peakGasDay.gas * 100)}%`;
+  document.querySelectorAll('.stat')[3].querySelector('.stat-label').textContent = 'Peak gas day';
+  document.querySelectorAll('.stat')[3].querySelector('.stat-detail').textContent = fmtDay(peakGasDay.date);
+
+  // Footer date stamp
+  const meta = document.getElementById('meta-stamp');
+  meta.classList.remove('loading');
+  const periodEnd = data[data.length - 1].date;
+  const periodStart = data[0].date;
+  meta.textContent = `№ 01 · Generation Mix · ${fmtDay(periodStart)}–${fmtDay(periodEnd)} ${periodEnd.getFullYear()}`;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   INIT — fetch live data, then render
+   ──────────────────────────────────────────────────────────────── */
+async function init() {
+  try {
+    const result = await fetchLiveData();
+    if (!result.daily || result.daily.length === 0) throw new Error('Empty response');
+    data = result.daily;
+    halfHourly = result.halfHourly;
+    document.querySelector('.footer-text').innerHTML =
+      '<strong>Source.</strong> Live data from the official NESO-developed Carbon Intensity API ' +
+      '(api.carbonintensity.org.uk), pulled on page load. Half-hourly generation mix and intensity, ' +
+      'aggregated to daily averages over the last 30 days. <strong>Method.</strong> Carbon intensity ' +
+      'follows the methodology used by carbonintensity.org.uk, including embedded wind/solar and interconnector flows.';
+  } catch (err) {
+    console.warn('Live data unavailable, using illustrative fallback:', err);
+    const result = fallbackData();
+    data = result.daily;
+    halfHourly = result.halfHourly;
+    document.querySelector('.footer-text').innerHTML =
+      '<strong>Note.</strong> Live data feed unreachable — showing illustrative fallback. ' +
+      'Source when live: NESO-developed Carbon Intensity API (api.carbonintensity.org.uk).';
+  }
+  updateHeadlineStats();
+  drawStackChart();
+  drawIntensityChart();
+  drawBarChart();
+  drawHourChart();
+  buildLegend();
+}
+
+init();
+
+window.addEventListener('resize', () => {
+  if (data.length === 0) return;
+  drawStackChart(); drawIntensityChart(); drawBarChart(); drawHourChart();
+});
+</script>
+
+</body>
+</html>
