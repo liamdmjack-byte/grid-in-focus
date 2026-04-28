@@ -468,6 +468,78 @@
     50% { opacity: 1; }
   }
 
+  /* Chart loading overlay */
+  .chart-loader {
+    position: absolute;
+    inset: 0;
+    background: var(--paper-warm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    z-index: 5;
+    transition: opacity 0.45s ease;
+  }
+  .chart-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .chart-loader-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 44px;
+  }
+  .chart-loader-bars span {
+    display: block;
+    width: 8px;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: bar-pulse 1.1s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+  .chart-loader-bars span:nth-child(1) { animation-delay: 0s;    height: 60%; background: var(--gen-wind); }
+  .chart-loader-bars span:nth-child(2) { animation-delay: 0.12s; height: 90%; background: var(--gen-solar); }
+  .chart-loader-bars span:nth-child(3) { animation-delay: 0.24s; height: 45%; background: var(--gen-nuclear); }
+  .chart-loader-bars span:nth-child(4) { animation-delay: 0.36s; height: 80%; background: var(--gen-gas); }
+  .chart-loader-bars span:nth-child(5) { animation-delay: 0.48s; height: 55%; background: var(--gen-biomass); }
+
+  @keyframes bar-pulse {
+    0%, 100% { transform: scaleY(0.35); opacity: 0.55; }
+    50%      { transform: scaleY(1);    opacity: 1; }
+  }
+
+  .chart-loader-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chart-loader-label::after {
+    content: '...';
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+    animation: dots 1.4s steps(4, end) infinite;
+    overflow: hidden;
+  }
+  @keyframes dots {
+    0%   { width: 0; }
+    100% { width: 1.2em; }
+  }
+  .chart-loader-source {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
   @media (max-width: 768px) {
     .container { padding: 24px 18px 60px; }
     .stats-strip { grid-template-columns: repeat(2, 1fr); }
@@ -535,6 +607,11 @@
       Hover the chart for the full daily breakdown.
     </p>
     <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Fetching live data</div>
+        <div class="chart-loader-source">api.carbonintensity.org.uk</div>
+      </div>
       <svg id="stack-chart" viewBox="0 0 1100 460"></svg>
       <div class="legend" id="legend"></div>
     </div>
@@ -557,6 +634,11 @@
       Half-hourly carbon intensity over the same 30-day window. The vertical bands mark the cleanest and dirtiest hours of the period.
     </p>
     <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Fetching live data</div>
+        <div class="chart-loader-source">api.carbonintensity.org.uk</div>
+      </div>
       <svg id="intensity-chart" viewBox="0 0 1100 280"></svg>
     </div>
   </div>
@@ -568,6 +650,11 @@
       <h2 class="section-title">The 30-day average</h2>
       <p class="section-blurb">Total share of generation by source across the period.</p>
       <div class="chart-frame">
+        <div class="chart-loader" data-loader>
+          <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="chart-loader-label">Fetching live data</div>
+          <div class="chart-loader-source">api.carbonintensity.org.uk</div>
+        </div>
         <svg id="bar-chart" viewBox="0 0 540 380"></svg>
       </div>
     </div>
@@ -576,6 +663,11 @@
       <h2 class="section-title">When each source works hardest</h2>
       <p class="section-blurb">Average output share by hour-of-day. Reveals the daily rhythm of the grid.</p>
       <div class="chart-frame">
+        <div class="chart-loader" data-loader>
+          <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="chart-loader-label">Fetching live data</div>
+          <div class="chart-loader-source">api.carbonintensity.org.uk</div>
+        </div>
         <svg id="hour-chart" viewBox="0 0 540 380"></svg>
       </div>
     </div>
@@ -1128,6 +1220,14 @@ async function init() {
   drawBarChart();
   drawHourChart();
   buildLegend();
+  hideLoaders();
+}
+
+function hideLoaders() {
+  document.querySelectorAll('[data-loader]').forEach((el, i) => {
+    setTimeout(() => el.classList.add('hidden'), i * 120);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, i * 120 + 600);
+  });
 }
 
 init();
