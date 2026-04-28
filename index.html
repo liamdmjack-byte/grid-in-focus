@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Grid in Focus — Energy networks data, decoded</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-soft: #3d3d3d;
+    --ink-muted: #6b6b6b;
+    --paper: #f4f1ea;
+    --paper-warm: #ebe6db;
+    --rule: #d4ccba;
+    --accent: #c4451c;
+    --accent-soft: #e8a48a;
+    --gen-wind: #4a7a8c;
+    --gen-solar: #e8b04b;
+    --gen-nuclear: #7d5a8c;
+    --gen-gas: #c4451c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 15% 5%, rgba(196, 69, 28, 0.05) 0%, transparent 45%),
+      radial-gradient(circle at 85% 70%, rgba(74, 122, 140, 0.05) 0%, transparent 45%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Masthead */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .series-mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .series-mark span {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+
+  .thin-rule {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin-bottom: 64px;
+  }
+
+  /* Hero */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 64px;
+    margin-bottom: 96px;
+    align-items: end;
+  }
+
+  .hero-headline {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(48px, 7.5vw, 96px);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .hero-blurb {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    padding-left: 24px;
+    border-left: 3px solid var(--accent);
+    max-width: 42ch;
+  }
+
+  .hero-aside {
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+  }
+
+  .hero-aside-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+    margin-bottom: 14px;
+  }
+
+  .hero-aside-text {
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .hero-aside-text strong { color: var(--ink); font-weight: 600; }
+
+  /* Promise strip */
+  .promise {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-bottom: 96px;
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .promise-item {
+    padding: 32px 28px 32px 0;
+    border-right: 1px solid var(--rule);
+  }
+  .promise-item:last-child { border-right: 0; padding-right: 0; }
+  .promise-item:not(:first-child) { padding-left: 28px; }
+
+  .promise-num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 36px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+
+  .promise-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+
+  .promise-text {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+
+  /* Section heading */
+  .section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 32px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .section-heading h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 36px;
+    letter-spacing: -0.02em;
+  }
+
+  .section-heading .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+
+  /* Posts grid */
+  .posts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    margin-bottom: 96px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .post-card {
+    padding: 36px 32px 36px 0;
+    border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+    cursor: pointer;
+    transition: background 0.2s, padding 0.2s;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .post-card:nth-child(2n) { border-right: 0; padding-right: 0; padding-left: 32px; }
+  .post-card:nth-child(2n+1) { padding-right: 32px; }
+
+  .post-card.live:hover {
+    background: var(--paper-warm);
+    padding-left: 40px;
+  }
+  .post-card:nth-child(2n).live:hover {
+    padding-left: 40px;
+  }
+
+  .post-card.draft { cursor: default; opacity: 0.55; }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+
+  .post-num {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .post-status {
+    padding: 3px 8px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+  }
+
+  .post-status.live {
+    border-color: var(--gen-wind);
+    color: var(--gen-wind);
+  }
+
+  .post-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-bottom: 14px;
+    max-width: 22ch;
+  }
+
+  .post-card em { font-style: italic; color: var(--accent); }
+
+  .post-blurb {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    max-width: 50ch;
+    margin-bottom: 18px;
+  }
+
+  .post-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .post-source::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .post-arrow {
+    position: absolute;
+    top: 36px;
+    right: 32px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 24px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .post-card.live:hover .post-arrow {
+    opacity: 1;
+    transform: translateX(6px);
+  }
+
+  /* About */
+  .about {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 64px;
+    margin-bottom: 96px;
+    padding-top: 48px;
+    border-top: 2px solid var(--ink);
+  }
+
+  .about-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .about h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    max-width: 14ch;
+  }
+
+  .about-body p {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    max-width: 60ch;
+  }
+
+  .about-body strong { color: var(--ink); font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .footer-left {
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+    max-width: 50ch;
+  }
+
+  .byline {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+  .byline strong {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    font-size: 16px;
+  }
+
+  /* Decorative big number */
+  .big-num {
+    position: absolute;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 280px;
+    line-height: 1;
+    color: rgba(196, 69, 28, 0.07);
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @media (max-width: 900px) {
+    .container { padding: 24px 18px 60px; }
+    .hero { grid-template-columns: 1fr; gap: 32px; }
+    .promise { grid-template-columns: 1fr; }
+    .promise-item { border-right: 0; border-bottom: 1px solid var(--rule); padding: 24px 0; }
+    .promise-item:last-child { border-bottom: 0; }
+    .posts { grid-template-columns: 1fr; }
+    .post-card, .post-card:nth-child(2n) {
+      padding: 28px 0; border-right: 0;
+    }
+    .post-card:nth-child(2n).live:hover, .post-card.live:hover { padding-left: 8px; }
+    .about { grid-template-columns: 1fr; gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div class="series-mark">The Grid <span>in Focus</span></div>
+    <div class="meta">A LinkedIn series · Updated weekly</div>
+  </div>
+  <hr class="thin-rule">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <h1 class="hero-headline">
+        Energy networks data,<br>
+        <em>decoded.</em>
+      </h1>
+      <p class="hero-blurb">
+        Britain's energy system publishes a colossal amount of data. Most of it sits in PDFs, CSVs, and dashboards
+        that assume you already know what you're looking for. This series turns that raw output into something
+        you can read in two minutes.
+      </p>
+    </div>
+    <div class="hero-aside">
+      <div class="hero-aside-label">— What this is</div>
+      <p class="hero-aside-text">
+        One question. One dataset. <strong>One chart that earns its place.</strong>
+        Every dashboard pulls live from the source — NESO, ENA, Ofgem, the DNOs — so the numbers move when the grid does.
+      </p>
+      <p class="hero-aside-text">
+        Built for the curious non-specialist as much as the practitioner.
+      </p>
+    </div>
+  </div>
+
+  <!-- PROMISE -->
+  <div class="promise">
+    <div class="promise-item">
+      <div class="promise-num">i.</div>
+      <div class="promise-title">Live, not static</div>
+      <div class="promise-text">Every dashboard fetches data on page load where possible. No screenshots, no stale numbers, no "as of" footnotes that age badly.</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-num">ii.</div>
+      <div class="promise-title">Source over speculation</div>
+      <div class="promise-text">Public data only — NESO Data Portal, Ofgem, ENA Open Networks and more. Methodology stated, links provided.</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-num">iii.</div>
+      <div class="promise-title">One insight per post</div>
+      <div class="promise-text">No dashboards-of-dashboards. Each post answers a single question with the visual that best earns its space.</div>
+    </div>
+  </div>
+
+  <!-- POSTS -->
+  <div class="section-heading">
+    <h2>The series so far</h2>
+    <span class="count">5 planned · 1 live</span>
+  </div>
+
+  <div class="posts">
+
+    <a href="grid-in-focus-01-generation-mix.html" class="post-card live">
+      <div class="post-meta">
+        <span class="post-num">№ 01</span>
+        <span class="post-status live">● Live</span>
+      </div>
+      <h3 class="post-title">Where did Britain's electricity <em>actually</em> come from this month?</h3>
+      <p class="post-blurb">
+        Thirty days of generation mix data. How much of the month was wind-driven, when gas had to step in,
+        and how the carbon intensity curve actually looks day to day.
+      </p>
+      <div class="post-source">NESO Carbon Intensity API · daily refresh</div>
+      <div class="post-arrow">→</div>
+    </a>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 02</span>
+        <span class="post-status">○ Coming</span>
+      </div>
+      <h3 class="post-title">£1.7 billion to turn <em>wind farms off</em>.</h3>
+      <p class="post-blurb">
+        Constraint payments are now bigger than the entire balancing budget was in 2018. Seven years of cost data,
+        what's actually driving the bill, and where it's heading by 2030.
+      </p>
+      <div class="post-source">NESO 2025 Annual Balancing Costs Report</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 03</span>
+        <span class="post-status">○ Coming</span>
+      </div>
+      <h3 class="post-title">A 722 GW queue, reshaped to <em>283 GW</em>.</h3>
+      <p class="post-blurb">
+        The largest connections clear-out Britain has ever done. The pre-reform queue, the post-reform pipeline,
+        the technology mix, and how it all maps to the Clean Power 2030 capacity range.
+      </p>
+      <div class="post-source">NESO Connections Reform Results · Dec 2025</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 04</span>
+        <span class="post-status">○ Coming</span>
+      </div>
+      <h3 class="post-title">When does Britain use the most electricity?</h3>
+      <p class="post-blurb">
+        A heatmap of demand by hour-of-day and day-of-week across a year. Where the duck curve is forming,
+        and where the flexibility opportunities are hiding.
+      </p>
+      <div class="post-source">NESO Historic Demand · half-hourly</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 05</span>
+        <span class="post-status">○ Coming</span>
+      </div>
+      <h3 class="post-title">What the FES tells us about <em>2030.</em></h3>
+      <p class="post-blurb">
+        Future Energy Scenarios capacity build-out trajectories. The gap between current build rates and
+        the trajectories the grid actually needs.
+      </p>
+      <div class="post-source">NESO Future Energy Scenarios</div>
+    </div>
+
+    <div class="post-card draft" style="position: relative; overflow: hidden;">
+      <div class="big-num">?</div>
+      <div class="post-meta" style="position: relative; z-index: 1;">
+        <span class="post-num">№ 06+</span>
+        <span class="post-status">○ Suggest one</span>
+      </div>
+      <h3 class="post-title" style="position: relative; z-index: 1;">What would you like to see next?</h3>
+      <p class="post-blurb" style="position: relative; z-index: 1;">
+        DNO heatmaps. ETYS pathways. Capacity Market clearing. Demand Flexibility Service results.
+        If there's a question you keep wishing someone had a chart for — say so.
+      </p>
+      <div class="post-source" style="position: relative; z-index: 1;">DM on LinkedIn</div>
+    </div>
+
+  </div>
+
+  <!-- ABOUT -->
+  <div class="about">
+    <div>
+      <div class="about-label">— About the series</div>
+      <h3>Why I'm doing this.</h3>
+    </div>
+    <div class="about-body">
+      <p>
+        I work in the UK energy sector and spend a lot of my time helping colleagues and clients
+        navigate datasets. Whilst that is confidential, there is a wealth of data in the public domain.
+        This series will bring that publicly available data to life, so you don't have to. Built in the open,
+        designed to be readable in the time it takes to drink half a coffee.
+      </p>
+      <p>
+        Each post lands on LinkedIn first. The full interactive dashboards live here.
+      </p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      The Grid in Focus is an independent project. All datasets are publicly available and are credited
+      on each dashboard. Views are personal and don't represent any employer.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
