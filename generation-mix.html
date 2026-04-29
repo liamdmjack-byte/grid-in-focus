@@ -911,9 +911,10 @@ function drawStackChart() {
     });
 
   // Axes
-  g.append('g').attr('class', 'axis')
+  const xAxis1 = g.append('g').attr('class', 'axis')
     .attr('transform', `translate(0,${h})`)
     .call(d3.axisBottom(x).ticks(d3.timeDay.every(5)).tickFormat(d3.timeFormat('%d %b')));
+  xAxis1.selectAll('.tick').filter((d, i) => i === 0).remove();
   g.append('g').attr('class', 'axis')
     .call(d3.axisLeft(y).ticks(5).tickFormat(d => (d * 100) + '%'));
 }
@@ -1000,9 +1001,10 @@ function drawIntensityChart() {
     .attr('stroke', 'var(--accent)')
     .attr('stroke-width', 1.5);
 
-  g.append('g').attr('class', 'axis')
+  const xAxis2 = g.append('g').attr('class', 'axis')
     .attr('transform', `translate(0,${h})`)
     .call(d3.axisBottom(x).ticks(d3.timeDay.every(3)).tickFormat(d3.timeFormat('%d %b')));
+  xAxis2.selectAll('.tick').filter((d, i) => i === 0).remove();
   g.append('g').attr('class', 'axis')
     .call(d3.axisLeft(y).ticks(4).tickFormat(d => d + ' g'));
 
