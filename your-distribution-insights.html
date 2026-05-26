@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who runs your bit of the grid? — The Grid in Focus #06</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-muted: #6b6b6b;
+  --paper: #f4f1ea;
+  --paper-warm: #ebe6db;
+  --rule: #d4ccba;
+  --accent: #c4451c;
+  --accent-soft: #e8a48a;
+  --dno-ukpn: #4a7a8c;
+  --dno-nged: #c4451c;
+  --dno-ssen: #6b8e4e;
+  --dno-npg: #7d5a8c;
+  --dno-enwl: #e8b04b;
+  --dno-spen: #5a8a9c;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(196,69,28,0.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(74,122,140,0.04) 0%, transparent 40%);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+  position: relative;
+  z-index: 2;
+}
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 8px;
+}
+
+.series-mark {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.series-mark a { text-decoration: none; color: inherit; }
+.series-mark span { font-style: normal; color: var(--accent); }
+
+.meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+
+.thin-rule { border: 0; border-top: 1px solid var(--rule); margin-bottom: 56px; }
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  text-decoration: none;
+  margin-bottom: 40px;
+  padding: 8px 0;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.back-btn:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.back-btn::before {
+  content: '←';
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+.back-btn:hover::before { transform: translateX(-4px); }
+
+.headline {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin-bottom: 28px;
+  max-width: 18ch;
+}
+.headline em { font-style: italic; font-weight: 400; color: var(--accent); }
+.headline .q-mark { font-style: normal; color: var(--ink); padding-left: 0.08em; }
+
+.standfirst {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  max-width: 60ch;
+  margin-bottom: 64px;
+  padding-left: 24px;
+  border-left: 3px solid var(--accent);
+}
+
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-bottom: 72px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.stat { padding: 28px 24px 28px 0; border-right: 1px solid var(--rule); }
+.stat:last-child { border-right: 0; padding-right: 0; }
+.stat:not(:first-child) { padding-left: 24px; }
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+  margin-bottom: 12px;
+}
+.stat-value {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.stat-value .unit { font-size: 16px; color: var(--ink-muted); font-weight: 400; margin-left: 4px; }
+.stat-detail { font-size: 13px; color: var(--ink-muted); }
+
+.section { margin-bottom: 72px; }
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::before { content: ''; width: 24px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin-bottom: 12px;
+  max-width: 32ch;
+}
+.section-blurb { font-size: 15px; color: var(--ink-soft); max-width: 70ch; margin-bottom: 32px; }
+
+.chart-frame {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 32px 24px 24px;
+  position: relative;
+}
+.chart-frame::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--ink);
+  border-left: 2px solid var(--ink);
+}
+.chart-frame::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 12px; height: 12px;
+  border-bottom: 2px solid var(--ink);
+  border-right: 2px solid var(--ink);
+}
+
+/* Chart loader */
+.chart-loader {
+  position: absolute;
+  inset: 0;
+  background: var(--paper-warm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 5;
+  transition: opacity 0.45s ease;
+}
+.chart-loader.hidden { opacity: 0; pointer-events: none; }
+.chart-loader-bars { display: flex; align-items: flex-end; gap: 6px; height: 44px; }
+.chart-loader-bars span {
+  display: block;
+  width: 8px;
+  border-radius: 1px;
+  animation: bar-pulse 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.chart-loader-bars span:nth-child(1) { animation-delay: 0s;    height: 60%; background: var(--dno-ukpn); }
+.chart-loader-bars span:nth-child(2) { animation-delay: 0.12s; height: 90%; background: var(--dno-nged); }
+.chart-loader-bars span:nth-child(3) { animation-delay: 0.24s; height: 45%; background: var(--dno-ssen); }
+.chart-loader-bars span:nth-child(4) { animation-delay: 0.36s; height: 80%; background: var(--dno-npg); }
+.chart-loader-bars span:nth-child(5) { animation-delay: 0.48s; height: 55%; background: var(--dno-enwl); }
+@keyframes bar-pulse {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.55; }
+  50%      { transform: scaleY(1);    opacity: 1; }
+}
+.chart-loader-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+}
+.chart-loader-label::after {
+  content: '...';
+  width: 1.2em;
+  animation: dots 1.4s steps(4, end) infinite;
+  overflow: hidden;
+}
+@keyframes dots { 0% { width: 0; } 100% { width: 1.2em; } }
+.chart-loader-source {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-muted); }
+.axis line, .axis path { stroke: var(--rule); shape-rendering: crispEdges; }
+.grid line { stroke: var(--rule); stroke-dasharray: 2,3; opacity: 0.6; }
+.grid path { display: none; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 24px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── DNO STRIP ── */
+.dno-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.dno-strip-item {
+  cursor: pointer;
+  padding: 14px 16px 12px;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-top: 4px solid transparent;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.dno-strip-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,26,26,0.08); }
+.dno-strip-item.active { box-shadow: 0 4px 16px rgba(26,26,26,0.14); }
+.dno-strip-abbr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.dno-strip-name {
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.dno-strip-regions { font-size: 11px; color: var(--ink-muted); margin-top: 4px; font-style: italic; }
+
+/* ── POSTCODE FINDER ── */
+.postcode-finder {
+  margin-bottom: 48px;
+}
+
+.postcode-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  max-width: 520px;
+}
+
+.postcode-input {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 16px 20px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.postcode-input:focus { border-color: var(--accent); }
+.postcode-input::placeholder { color: var(--ink-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.postcode-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  padding: 16px 24px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+.postcode-btn:hover { background: var(--accent); border-color: var(--accent); }
+.postcode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.postcode-result {
+  margin-top: 20px;
+  min-height: 32px;
+}
+
+.postcode-found {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-left: 4px solid var(--accent);
+  background: var(--paper-warm);
+}
+
+.postcode-found-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.postcode-found-name {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.postcode-found-area {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-left: auto;
+}
+
+.postcode-error {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  padding: 12px 0;
+}
+
+.postcode-loading {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+.postcode-loading::before {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--accent);
+  animation: pulse 1.2s infinite;
+}
+
+/* ── DNO PANEL ── */
+.dno-panel {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 28px;
+  margin-top: 24px;
+}
+
+.dno-panel-prompt {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-muted);
+  padding: 24px 0;
+}
+.dno-panel-inner { display: none; }
+.dno-panel-inner.visible { display: block; }
+.dno-panel-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.dno-panel-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.dno-panel-area { font-size: 13px; color: var(--ink-muted); margin-bottom: 24px; font-style: italic; }
+.dno-kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.dno-kv { padding: 14px 0; border-top: 1px solid var(--rule); }
+.dno-kv-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+.dno-kv-value {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dno-kv-unit { font-size: 12px; color: var(--ink-muted); font-weight: 400; margin-left: 3px; }
+.dno-rag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.dno-rag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.dno-rag.good    { background: rgba(107,142,78,0.15); color: #4a6e36; }
+.dno-rag.good::before    { background: #6b8e4e; }
+.dno-rag.neutral { background: rgba(232,176,75,0.18); color: #8a6010; }
+.dno-rag.neutral::before { background: #e8b04b; }
+.dno-rag.concern { background: rgba(196,69,28,0.12); color: var(--accent); }
+.dno-rag.concern::before { background: var(--accent); }
+.dno-panel-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  font-style: italic;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+/* ── INSIGHT ── */
+.insight {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 36px 40px;
+  margin: 80px 0;
+  position: relative;
+}
+.insight::before {
+  content: '"';
+  position: absolute;
+  top: -20px; left: 32px;
+  font-family: 'Fraunces', serif;
+  font-size: 120px;
+  line-height: 1;
+  color: var(--accent);
+  font-weight: 900;
+}
+.insight-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent-soft);
+  margin-bottom: 14px;
+  margin-left: 60px;
+}
+.insight-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.4;
+  margin-left: 60px;
+  max-width: 50ch;
+}
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 2px solid var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-text { font-size: 12px; color: var(--ink-muted); max-width: 60ch; line-height: 1.55; }
+.footer-text strong { color: var(--ink); }
+.footer-text a { color: var(--accent); text-decoration: none; }
+.footer-text a:hover { text-decoration: underline; }
+.byline { font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); text-align: right; }
+.byline strong { font-style: normal; font-weight: 700; color: var(--ink); display: block; font-size: 16px; }
+
+/* ── CHART TOOLTIP ── */
+#chart-tooltip {
+  position: fixed;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 999;
+  border: 1px solid var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+  max-width: 260px;
+}
+#chart-tooltip.visible { opacity: 1; }
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+.reveal-children > * { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.reveal-children.visible > *:nth-child(1) { transition-delay: 0s;    opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(2) { transition-delay: 0.12s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(3) { transition-delay: 0.24s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(4) { transition-delay: 0.36s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(5) { transition-delay: 0.48s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(6) { transition-delay: 0.60s; opacity: 1; transform: none; }
+.reveal-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal-left.visible { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .container { padding: 24px 18px 60px; }
+  .dno-panel { position: static; width: 100%; box-shadow: none; margin-top: 16px; }
+  .dno-strip { grid-template-columns: repeat(3, 1fr); }
+  .stats-strip { grid-template-columns: repeat(2, 1fr); }
+  .stat { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 16px; }
+  .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0; }
+  .insight { padding: 28px 24px; }
+  .insight-text { margin-left: 0; font-size: 20px; }
+  .insight-label { margin-left: 0; }
+  .insight::before { left: 16px; font-size: 80px; }
+  #map { height: 400px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 06 · DNO Map · RIIO-ED2 2024-25</div>
+  </div>
+  <hr class="thin-rule">
+
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">Who runs your bit of <em>the grid</em><span class="q-mark">?</span></h1>
+  <p class="standfirst reveal">
+    Britain's electricity distribution network is divided between six groups, serving 14 licensed areas.
+    They own the wires from the transmission network to your meter — and under RIIO-ED2 they're being
+    held accountable for more than just keeping the lights on.
+  </p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Distribution network operators</div>
+      <div class="stat-value">6<span class="unit">groups</span></div>
+      <div class="stat-detail">14 licensed areas in total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Homes & businesses served</div>
+      <div class="stat-value">31<span class="unit">m</span></div>
+      <div class="stat-detail">connections across Great Britain</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Price control period</div>
+      <div class="stat-value">RIIO-ED2</div>
+      <div class="stat-detail">Apr 2023 – Mar 2028</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">DSO incentive outturn</div>
+      <div class="stat-value">£39.6<span class="unit">m</span></div>
+      <div class="stat-detail">all 6 groups in positive territory</div>
+    </div>
+  </div>
+
+  <!-- FIGURE 01: POSTCODE FINDER + DNO CARDS -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">Find your DNO</h2>
+    <p class="section-blurb">
+      Enter any GB postcode to find out which distribution network operator owns the wires to
+      your meter — and see their RIIO-ED2 performance at a glance.
+    </p>
+
+    <!-- Postcode input -->
+    <div class="postcode-finder">
+      <div class="postcode-row">
+        <input type="text" id="postcode-input" class="postcode-input"
+               placeholder="e.g. SW1A 1AA" maxlength="8" autocomplete="off" spellcheck="false"/>
+        <button class="postcode-btn" id="postcode-btn" onclick="lookupPostcode()">
+          Find my DNO →
+        </button>
+      </div>
+      <div class="postcode-result" id="postcode-result"></div>
+    </div>
+
+    <!-- DNO group selector + detail panel -->
+    <div class="section-label" style="margin-top:48px">— Or select a group directly</div>
+    <div class="dno-strip reveal-children" id="dno-strip"></div>
+
+    <div class="dno-panel" id="dno-panel">
+      <div class="dno-panel-prompt" id="dno-panel-prompt">
+        Enter a postcode above, or select a group to explore RIIO-ED2 performance
+      </div>
+      <div class="dno-panel-inner" id="dno-panel-inner"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The signal in the noise</div>
+    <div class="insight-text">
+      RIIO-ED2 is the first price control where distribution operators are explicitly rewarded
+      for enabling flexibility — not just for keeping the lights on. All six groups earned positive
+      DSO incentive payments in 2024-25, totalling £39.6m.
+    </div>
+  </div>
+
+  <!-- FIGURE 02: PERFORMANCE -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">Customer satisfaction, by group</h2>
+    <p class="section-blurb">
+      RIIO-ED2 customer satisfaction scores for 2024-25. Sector average: 8.85. All groups
+      scored above 8.75 — the tightest range across any price control period to date.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">Ofgem RIIO-ED2 Annual Report 2024-25</div>
+      </div>
+      <svg id="perf-chart" viewBox="0 0 1100 360"></svg>
+    </div>
+  </div>
+
+  <!-- FIGURE 03: TOTEX -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Totex: actual spend vs Ofgem allowance</h2>
+    <p class="section-blurb">
+      Total expenditure in 2024-25. All six groups spent slightly above their Ofgem allowance —
+      a sign that networks are accelerating investment ahead of the Clean Power 2030 pipeline.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">Ofgem RIIO-ED2 Annual Report 2024-25</div>
+      </div>
+      <svg id="totex-chart" viewBox="0 0 1100 320"></svg>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">
+      <strong>Postcode lookup.</strong> DNO identification uses the
+      <a href="https://postcodes.io" target="_blank">Postcodes.io</a> API, which returns the
+      administrative region for each postcode. DNO boundaries follow electricity infrastructure
+      rather than administrative geography, so postcodes very close to area borders may
+      occasionally return an incorrect result.
+      <strong>Performance data.</strong> All figures from Ofgem's
+      <a href="https://www.ofgem.gov.uk/transparency-document/riio-2-electricity-distribution-annual-report-2024-2025" target="_blank">RIIO-ED2 Annual Report 2024-25</a>
+      (January 2026). Totex figures approximate from published group-level summaries.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam Jack — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── DNO DATA ── */
+const DNO_GROUPS = [
+  { id:'ukpn', name:'UK Power Networks',    abbr:'UKPN', color:'#4a7a8c',
+    areas:['Eastern','London','South Eastern'], region:'London, South East & East of England',
+    customers:8.4, custSat:8.92, ci:47.2, cml:42.1, totexA:1.62, totexB:1.58, dso:7.71,
+    note:'Covers the highest-density urban networks in Britain including all of London. Strongest customer satisfaction in 2024-25.' },
+  { id:'nged', name:'National Grid ED',     abbr:'NGED', color:'#c4451c',
+    areas:['East Midlands','West Midlands','South West','South Wales'], region:'Midlands, South West & South Wales',
+    customers:8.0, custSat:8.81, ci:52.4, cml:51.8, totexA:1.74, totexB:1.69, dso:7.55,
+    note:'Formerly Western Power Distribution (WPD), rebranded after National Grid acquisition in 2022. Largest footprint by geography.' },
+  { id:'ssen', name:'SSEN',                 abbr:'SSEN', color:'#6b8e4e',
+    areas:['Southern England','North of Scotland'], region:'Central Southern England & North of Scotland',
+    customers:3.8, custSat:8.78, ci:58.1, cml:67.4, totexA:1.21, totexB:1.14, dso:7.63,
+    note:'Operates two very different networks. High CML in the north reflects challenging rural/island geography rather than management failure.' },
+  { id:'npg',  name:'Northern Powergrid',   abbr:'NPg',  color:'#7d5a8c',
+    areas:['Northeast','Yorkshire'], region:'North East England & Yorkshire',
+    customers:3.9, custSat:8.88, ci:49.8, cml:44.2, totexA:0.91, totexB:0.89, dso:7.82,
+    note:'Owned by Berkshire Hathaway Energy. Consistently strong reliability. Second-highest DSO incentive score in 2024-25.' },
+  { id:'enwl', name:'Electricity North West',abbr:'ENWL', color:'#e8b04b',
+    areas:['North West'], region:'North West England',
+    customers:2.4, custSat:8.84, ci:51.3, cml:47.6, totexA:0.58, totexB:0.56, dso:7.71,
+    note:'Smallest of the six groups. Serves dense urban Manchester through to rural Cumbria at the Scottish border.' },
+  { id:'spen', name:'SP Energy Networks',   abbr:'SPEN', color:'#5a8a9c',
+    areas:['Manweb','SP Distribution'], region:'Merseyside, North Wales & Southern Scotland',
+    customers:3.5, custSat:8.85, ci:54.6, cml:55.1, totexA:0.98, totexB:0.95, dso:7.58,
+    note:'Owned by ScottishPower (Iberdrola). Two distinct areas: Manweb in north Wales/Merseyside, SP Distribution in southern Scotland.' }
+];
+
+// Postcode -> region -> DNO mapping (using postcodes.io region/county fields)
+const REGION_TO_GROUP = {
+  'london':                   'ukpn',
+  'south east':               'ukpn',
+  'east of england':          'ukpn',
+  'east midlands':            'nged',
+  'west midlands':            'nged',
+  'south west':               'nged',
+  'wales':                    'nged',
+  'yorkshire and the humber': 'npg',
+  'north east':               'npg',
+  'north west':               'enwl',
+  'scotland':                 'ssen',
+};
+
+const COUNTY_TO_GROUP = {
+  'hampshire':'ssen','isle of wight':'ssen','dorset':'ssen','wiltshire':'ssen',
+  'berkshire':'ssen','oxfordshire':'ssen','buckinghamshire':'ssen',
+  'merseyside':'spen','cheshire':'spen','cheshire west and chester':'spen',
+  'cheshire east':'spen','gwynedd':'spen','anglesey':'spen','isle of anglesey':'spen',
+  'conwy':'spen','denbighshire':'spen','flintshire':'spen','wrexham':'spen',
+  'south lanarkshire':'spen','north lanarkshire':'spen','east ayrshire':'spen',
+  'north ayrshire':'spen','south ayrshire':'spen','dumfries and galloway':'spen',
+  'scottish borders':'spen','east lothian':'spen','west lothian':'spen',
+  'midlothian':'spen','city of edinburgh':'spen','falkirk':'spen',
+  'clackmannanshire':'spen','renfrewshire':'spen','east renfrewshire':'spen',
+  'inverclyde':'spen','glasgow city':'spen','east dunbartonshire':'spen',
+  'west dunbartonshire':'spen','argyll and bute':'spen',
+  'greater manchester':'enwl','lancashire':'enwl','cumbria':'enwl',
+};
+
+let selectedGroup = null;
+
+/* ── POSTCODE LOOKUP ── */
+async function lookupPostcode() {
+  const raw = document.getElementById('postcode-input').value.trim().toUpperCase().replace(/\s+/g,'');
+  if (!raw) return;
+  const btn = document.getElementById('postcode-btn');
+  const result = document.getElementById('postcode-result');
+  result.innerHTML = '<div class="postcode-loading">Looking up postcode</div>';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(raw)}`);
+    const data = await res.json();
+    if (!res.ok || data.status !== 200) throw new Error(data.error || 'Postcode not found');
+    const p = data.result;
+    const region = (p.region || '').toLowerCase();
+    const county = (p.admin_county || p.nuts || '').toLowerCase();
+    const district = (p.admin_district || '').toLowerCase();
+    let gid = COUNTY_TO_GROUP[county] || COUNTY_TO_GROUP[district] || REGION_TO_GROUP[region];
+    if (!gid && region === 'scotland') gid = 'ssen';
+    if (!gid) throw new Error(`Couldn't map ${p.postcode} to a DNO — it may be near an area boundary`);
+    const group = DNO_GROUPS.find(g => g.id === gid);
+    result.innerHTML = `
+      <div class="postcode-found">
+        <div>
+          <div class="postcode-found-code">${p.postcode}</div>
+          <div class="postcode-found-name" style="color:${group.color}">${group.name}</div>
+        </div>
+        <div class="postcode-found-area">${group.region}</div>
+      </div>
+      <p style="font-size:12px;color:var(--ink-muted);font-style:italic;margin-top:10px;line-height:1.5">
+        Note: DNO boundaries follow electricity infrastructure, not administrative geography.
+        Postcodes near area borders may occasionally return an incorrect result.
+      </p>`;
+    selectGroup(gid);
+  } catch(e) {
+    result.innerHTML = `<div class="postcode-error">&#9888; ${e.message || 'Postcode not found — please check and try again.'}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('postcode-input');
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') lookupPostcode(); });
+});
+
+
+/* ── BUILD GROUP SELECTOR STRIP ── */
+function buildStrip() {
+  const strip = document.getElementById('dno-strip');
+  DNO_GROUPS.forEach(g => {
+    const el = document.createElement('div');
+    el.className = 'dno-strip-item';
+    el.dataset.id = g.id;
+    el.style.borderTopColor = g.color;
+    el.innerHTML = `
+      <div class="dno-strip-abbr" style="color:${g.color}">${g.abbr}</div>
+      <div class="dno-strip-name">${g.name}</div>
+      <div class="dno-strip-regions">${g.areas.length} area${g.areas.length > 1 ? 's' : ''}</div>
+    `;
+    el.addEventListener('click', () => selectGroup(g.id));
+    strip.appendChild(el);
+  });
+}
+
+/* ── GROUP SELECTION ── */
+function selectGroup(gid) {
+  selectedGroup = gid;
+  const group = DNO_GROUPS.find(g => g.id === gid);
+  if (!group) return;
+
+  // Update strip
+  document.querySelectorAll('.dno-strip-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === gid);
+  });
+
+  // Populate detail panel
+  const panel = document.getElementById('dno-panel-inner');
+  const prompt = document.getElementById('dno-panel-prompt');
+  const variance = ((group.totexA - group.totexB) / group.totexB * 100).toFixed(1);
+  const ragClass = group.custSat >= 8.9 ? 'good' : group.custSat >= 8.82 ? 'neutral' : 'concern';
+  const ragLabel = group.custSat >= 8.9 ? 'Top performer' : group.custSat >= 8.82 ? 'Average' : 'Below average';
+
+  panel.innerHTML = `
+    <div class="dno-panel-tag" style="color:${group.color}">${group.abbr}</div>
+    <div class="dno-panel-name">${group.name}</div>
+    <div class="dno-panel-area">${group.region}</div>
+    <div class="dno-kv-grid">
+      <div class="dno-kv">
+        <div class="dno-kv-label">Customers served</div>
+        <div class="dno-kv-value">${group.customers}<span class="dno-kv-unit">m</span></div>
+      </div>
+      <div class="dno-kv">
+        <div class="dno-kv-label">Customer satisfaction</div>
+        <div class="dno-kv-value">${group.custSat}</div>
+        <div class="dno-rag ${ragClass}">${ragLabel}</div>
+      </div>
+      <div class="dno-kv">
+        <div class="dno-kv-label">Interruptions / 100</div>
+        <div class="dno-kv-value">${group.ci}</div>
+      </div>
+      <div class="dno-kv">
+        <div class="dno-kv-label">Minutes lost / cust.</div>
+        <div class="dno-kv-value">${group.cml}</div>
+      </div>
+      <div class="dno-kv">
+        <div class="dno-kv-label">Totex actual</div>
+        <div class="dno-kv-value">£${group.totexA}<span class="dno-kv-unit">bn</span></div>
+      </div>
+      <div class="dno-kv">
+        <div class="dno-kv-label">vs allowance</div>
+        <div class="dno-kv-value" style="color:${parseFloat(variance)>0?'var(--accent)':'#6b8e4e'}">
+          ${parseFloat(variance)>0?'+':''}${variance}%
+        </div>
+      </div>
+    </div>
+    <div class="dno-panel-note">${group.note}</div>
+  `;
+
+  prompt.style.display = 'none';
+  panel.classList.add('visible');
+
+  // Redraw charts highlighting selected group
+  if (chartsDrawn.perf)  drawPerfChart(gid);
+  if (chartsDrawn.totex) drawTotexChart(gid);
+}
+
+/* ── D3 CHART: CUSTOMER SATISFACTION ── */
+function drawPerfChart(highlightId) {
+  const svg = d3.select('#perf-chart');
+  const W = 1100, H = 360;
+  const margin = { top: 40, right: 120, bottom: 50, left: 210 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const sorted = [...DNO_GROUPS].sort((a, b) => b.custSat - a.custSat);
+  const x = d3.scaleLinear().domain([8.65, 9.0]).range([0, w]);
+  const y = d3.scaleBand().domain(sorted.map(d => d.name)).range([0, h]).padding(0.22);
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisBottom(x).tickSize(h).tickFormat('').tickValues([8.7, 8.75, 8.8, 8.85, 8.9, 8.95, 9.0]))
+    .attr('transform', `translate(0,0)`);
+
+  const avg = d3.mean(sorted, d => d.custSat);
+  g.append('line')
+    .attr('x1', x(avg)).attr('x2', x(avg))
+    .attr('y1', 0).attr('y2', h)
+    .attr('stroke', 'var(--ink)').attr('stroke-width', 1.5)
+    .attr('stroke-dasharray', '4,3').attr('opacity', 0.5);
+  g.append('text')
+    .attr('x', x(avg)).attr('y', -12).attr('text-anchor', 'middle')
+    .style('font-family', 'JetBrains Mono, monospace').style('font-size', '10px')
+    .style('text-transform', 'uppercase').style('letter-spacing', '0.12em')
+    .style('fill', 'var(--ink-muted)').text(`Sector avg ${avg.toFixed(3)}`);
+
+  const tooltip = d3.select('#chart-tooltip');
+
+  // Bars — animated entrance + hover + group highlight
+  const bars = g.selectAll('.bar').data(sorted).join('rect')
+    .attr('class', 'bar')
+    .attr('y', d => y(d.name))
+    .attr('x', x(8.65))
+    .attr('width', 0)  // start at 0 for animation
+    .attr('height', y.bandwidth())
+    .attr('fill', d => d.color)
+    .attr('opacity', d => !highlightId || d.id === highlightId ? 1 : 0.22)
+    .style('cursor', 'pointer')
+    .on('mouseenter', function(event, d) {
+      d3.select(this).attr('opacity', 1).attr('height', y.bandwidth() + 4).attr('y', y(d.name) - 2);
+      tooltip.classed('visible', true)
+        .html(`<strong style="color:${d.color}">${d.name}</strong><br>
+               Customer satisfaction: <strong>${d.custSat}</strong><br>
+               Interruptions/100: ${d.ci} &nbsp;|&nbsp; CML: ${d.cml} min`);
+    })
+    .on('mousemove', function(event) {
+      const svgRect = document.getElementById('perf-chart').getBoundingClientRect();
+      tooltip.style('left', (event.clientX - svgRect.left + 16) + 'px')
+             .style('top',  (event.clientY - svgRect.top  - 10) + 'px');
+    })
+    .on('mouseleave', function(event, d) {
+      d3.select(this)
+        .attr('opacity', !highlightId || d.id === highlightId ? 1 : 0.22)
+        .attr('height', y.bandwidth()).attr('y', y(d.name));
+      tooltip.classed('visible', false);
+    })
+    .on('click', (event, d) => selectGroup(d.id));
+
+  // Animate bars in
+  bars.transition().duration(700).ease(d3.easeCubicOut)
+    .delay((d, i) => i * 80)
+    .attr('width', d => x(d.custSat) - x(8.65));
+
+  // Score labels
+  g.selectAll('.score').data(sorted).join('text')
+    .attr('x', d => x(d.custSat) + 10)
+    .attr('y', d => y(d.name) + y.bandwidth() / 2 + 6)
+    .style('font-family', 'Fraunces, serif').style('font-size', '18px')
+    .style('font-weight', '500').style('fill', 'var(--ink)')
+    .attr('opacity', d => !highlightId || d.id === highlightId ? 1 : 0.3)
+    .text(d => d.custSat.toFixed(2));
+
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(12)).select('.domain').remove();
+  g.selectAll('.axis text')
+    .style('font-family', 'Inter Tight, sans-serif').style('font-size', '13px')
+    .style('font-weight', '500')
+    .style('fill', d => !highlightId || DNO_GROUPS.find(g => g.name === d)?.id === highlightId
+      ? 'var(--ink)' : 'var(--ink-muted)')
+    .style('font-weight', d => !highlightId || DNO_GROUPS.find(g => g.name === d)?.id === highlightId
+      ? '600' : '400');
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).tickValues([8.7, 8.75, 8.8, 8.85, 8.9, 8.95, 9.0]).tickFormat(d => d.toFixed(2)));
+}
+
+/* ── D3 CHART: TOTEX ── */
+function drawTotexChart(highlightId) {
+  const svg = d3.select('#totex-chart');
+  const W = 1100, H = 320;
+  const margin = { top: 50, right: 30, bottom: 50, left: 80 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(DNO_GROUPS.map(d => d.abbr)).range([0, w]).padding(0.28);
+  const yMax = d3.max(DNO_GROUPS, d => Math.max(d.totexA, d.totexB)) * 1.18;
+  const y = d3.scaleLinear().domain([0, yMax]).range([h, 0]);
+
+  const tooltip = d3.select('#chart-tooltip');
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+
+  // Allowance bars
+  g.selectAll('.bar-allow').data(DNO_GROUPS).join('rect')
+    .attr('x', d => x(d.abbr))
+    .attr('y', d => y(d.totexB))
+    .attr('width', x.bandwidth())
+    .attr('height', d => h - y(d.totexB))
+    .attr('fill', 'var(--rule)').attr('opacity', 0.9);
+
+  // Actual bars — animated + hover + highlight
+  const actuals = g.selectAll('.bar-actual').data(DNO_GROUPS).join('rect')
+    .attr('class', 'bar-actual')
+    .attr('x', d => x(d.abbr) + x.bandwidth() * 0.1)
+    .attr('y', h)  // start at baseline for animation
+    .attr('width', x.bandwidth() * 0.8)
+    .attr('height', 0)
+    .attr('fill', d => d.color)
+    .attr('opacity', d => !highlightId || d.id === highlightId ? 0.88 : 0.2)
+    .style('cursor', 'pointer')
+    .on('mouseenter', function(event, d) {
+      d3.select(this).attr('opacity', 1);
+      tooltip.classed('visible', true)
+        .html(`<strong style="color:${d.color}">${d.name}</strong><br>
+               Actual: <strong>£${d.totexA}bn</strong><br>
+               Allowance: £${d.totexB}bn &nbsp;|&nbsp;
+               Variance: ${((d.totexA-d.totexB)/d.totexB*100).toFixed(1)}%`);
+    })
+    .on('mousemove', function(event) {
+      const svgRect = document.getElementById('totex-chart').getBoundingClientRect();
+      tooltip.style('left', (event.clientX - svgRect.left + 16) + 'px')
+             .style('top',  (event.clientY - svgRect.top  - 10) + 'px');
+    })
+    .on('mouseleave', function(event, d) {
+      d3.select(this).attr('opacity', !highlightId || d.id === highlightId ? 0.88 : 0.2);
+      tooltip.classed('visible', false);
+    })
+    .on('click', (event, d) => selectGroup(d.id));
+
+  // Animate bars up from baseline
+  actuals.transition().duration(700).ease(d3.easeCubicOut)
+    .delay((d, i) => i * 80)
+    .attr('y', d => y(d.totexA))
+    .attr('height', d => h - y(d.totexA));
+
+  // Value labels
+  g.selectAll('.bar-label').data(DNO_GROUPS).join('text')
+    .attr('x', d => x(d.abbr) + x.bandwidth() / 2)
+    .attr('y', d => y(d.totexA) - 8).attr('text-anchor', 'middle')
+    .style('font-family', 'Fraunces, serif').style('font-size', '16px')
+    .style('font-weight', '500')
+    .style('fill', d => !highlightId || d.id === highlightId ? 'var(--ink)' : 'var(--ink-muted)')
+    .text(d => '£' + d.totexA + 'bn');
+
+  g.selectAll('.variance').data(DNO_GROUPS).join('text')
+    .attr('x', d => x(d.abbr) + x.bandwidth() / 2)
+    .attr('y', d => y(d.totexA) - 26).attr('text-anchor', 'middle')
+    .style('font-family', 'JetBrains Mono, monospace').style('font-size', '10px')
+    .style('fill', d => d.totexA > d.totexB ? 'var(--accent)' : '#6b8e4e')
+    .attr('opacity', d => !highlightId || d.id === highlightId ? 1 : 0.3)
+    .text(d => {
+      const p = ((d.totexA - d.totexB) / d.totexB * 100).toFixed(1);
+      return (parseFloat(p) > 0 ? '+' : '') + p + '%';
+    });
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`).call(d3.axisBottom(x));
+  g.selectAll('.axis text')
+    .style('font-weight', d => !highlightId || DNO_GROUPS.find(g => g.abbr === d)?.id === highlightId ? '600' : '400')
+    .style('fill', d => !highlightId || DNO_GROUPS.find(g => g.abbr === d)?.id === highlightId
+      ? 'var(--ink)' : 'var(--ink-muted)');
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => '£' + d + 'bn'));
+
+  g.append('rect').attr('x', 0).attr('y', -38).attr('width', 14).attr('height', 14).attr('fill', 'var(--rule)').attr('opacity', 0.9);
+  g.append('text').attr('x', 20).attr('y', -27).style('font-family', 'Inter Tight, sans-serif').style('font-size', '12px').style('fill', 'var(--ink-soft)').text('Ofgem allowance');
+  g.append('rect').attr('x', 160).attr('y', -38).attr('width', 14).attr('height', 14).attr('fill', 'var(--accent)').attr('opacity', 0.88);
+  g.append('text').attr('x', 180).attr('y', -27).style('font-family', 'Inter Tight, sans-serif').style('font-size', '12px').style('fill', 'var(--ink-soft)').text('Actual spend');
+}
+
+/* ── LOADERS ── */
+function hideLoaders() {
+  document.querySelectorAll('[data-loader]').forEach((el, i) => {
+    setTimeout(() => el.classList.add('hidden'), i * 120);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, i * 120 + 600);
+  });
+}
+
+/* ── SCROLL OBSERVERS ── */
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('visible');
+    revealObs.unobserve(e.target);
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal, .reveal-left, .reveal-children').forEach(el => revealObs.observe(el));
+
+// Draw charts only when they scroll into view
+const chartsDrawn = { perf: false, totex: false };
+const chartScrollObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const id = e.target.querySelector('svg')?.id;
+    if (id === 'perf-chart'  && !chartsDrawn.perf)  { chartsDrawn.perf  = true; drawPerfChart(selectedGroup);  hideLoaders(); }
+    if (id === 'totex-chart' && !chartsDrawn.totex) { chartsDrawn.totex = true; drawTotexChart(selectedGroup); hideLoaders(); }
+    chartScrollObs.unobserve(e.target);
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.chart-frame').forEach(el => chartScrollObs.observe(el));
+
+/* ── INIT ── */
+buildStrip();
+
+window.addEventListener('resize', () => {
+  if (chartsDrawn.perf)  drawPerfChart(selectedGroup);
+  if (chartsDrawn.totex) drawTotexChart(selectedGroup);
+});
+</script>
+
+<div id="chart-tooltip"></div>
+
+</body>
+</html>
