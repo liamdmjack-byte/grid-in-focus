@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three pathways to net zero — The Grid in Focus #05</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-muted: #6b6b6b;
+  --paper: #f4f1ea;
+  --paper-warm: #ebe6db;
+  --rule: #d4ccba;
+  --accent: #c4451c;
+  --accent-soft: #e8a48a;
+
+  --path-holistic: #c4451c;       /* Holistic Transition — orange (most balanced) */
+  --path-electric: #4a7a8c;       /* Electric Engagement — cool blue */
+  --path-hydrogen: #6b8e4e;       /* Hydrogen Evolution — green */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(196, 69, 28, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(74, 122, 140, 0.04) 0%, transparent 40%);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+  position: relative;
+  z-index: 2;
+}
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 8px;
+}
+
+.series-mark {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.series-mark a { text-decoration: none; color: inherit; }
+.series-mark span { font-style: normal; color: var(--accent); }
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  text-decoration: none;
+  margin-bottom: 40px;
+  padding: 8px 0;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.back-btn:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.back-btn::before {
+  content: '←';
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+.back-btn:hover::before { transform: translateX(-4px); }
+
+.meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+
+.meta.loading { display: flex; align-items: center; gap: 10px; }
+.meta.loading::before {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--accent);
+  animation: pulse 1.2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Chart loading overlay */
+.chart-loader {
+  position: absolute;
+  inset: 0;
+  background: var(--paper-warm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 5;
+  transition: opacity 0.45s ease;
+}
+.chart-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chart-loader-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 44px;
+}
+.chart-loader-bars span {
+  display: block;
+  width: 8px;
+  border-radius: 1px;
+  animation: bar-pulse 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+/* Bars echo the pathway palette */
+.chart-loader-bars span:nth-child(1) { animation-delay: 0s;    height: 60%; background: var(--path-holistic); }
+.chart-loader-bars span:nth-child(2) { animation-delay: 0.12s; height: 90%; background: var(--path-electric); }
+.chart-loader-bars span:nth-child(3) { animation-delay: 0.24s; height: 45%; background: var(--path-hydrogen); }
+.chart-loader-bars span:nth-child(4) { animation-delay: 0.36s; height: 80%; background: var(--accent); }
+.chart-loader-bars span:nth-child(5) { animation-delay: 0.48s; height: 55%; background: var(--accent-soft); }
+
+@keyframes bar-pulse {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.55; }
+  50%      { transform: scaleY(1);    opacity: 1; }
+}
+
+.chart-loader-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chart-loader-label::after {
+  content: '...';
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: dots 1.4s steps(4, end) infinite;
+  overflow: hidden;
+}
+@keyframes dots {
+  0%   { width: 0; }
+  100% { width: 1.2em; }
+}
+.chart-loader-source {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.thin-rule {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin-bottom: 56px;
+}
+
+.headline {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin-bottom: 28px;
+  max-width: 18ch;
+}
+
+.headline em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+.standfirst {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  max-width: 60ch;
+  margin-bottom: 64px;
+  padding-left: 24px;
+  border-left: 3px solid var(--accent);
+}
+
+/* Pathway cards */
+.pathways {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 80px;
+}
+
+.pathway-card {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 28px 28px 24px;
+  position: relative;
+  border-top-width: 4px;
+}
+
+.pathway-card.holistic { border-top-color: var(--path-holistic); }
+.pathway-card.electric { border-top-color: var(--path-electric); }
+.pathway-card.hydrogen { border-top-color: var(--path-hydrogen); }
+
+.pathway-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.pathway-card.holistic .pathway-tag { color: var(--path-holistic); }
+.pathway-card.electric .pathway-tag { color: var(--path-electric); }
+.pathway-card.hydrogen .pathway-tag { color: var(--path-hydrogen); }
+
+.pathway-name {
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.15;
+  margin-bottom: 14px;
+  letter-spacing: -0.015em;
+}
+
+.pathway-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.pathway-key {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-muted);
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.pathway-key strong { color: var(--ink); font-style: normal; font-weight: 600; }
+
+/* Section */
+.section { margin-bottom: 72px; }
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin-bottom: 12px;
+  max-width: 32ch;
+}
+
+.section-blurb {
+  font-size: 15px;
+  color: var(--ink-soft);
+  max-width: 70ch;
+  margin-bottom: 32px;
+}
+
+.chart-frame {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 32px 24px 24px;
+  position: relative;
+}
+
+.chart-frame::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--ink);
+  border-left: 2px solid var(--ink);
+}
+.chart-frame::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 12px; height: 12px;
+  border-bottom: 2px solid var(--ink);
+  border-right: 2px solid var(--ink);
+}
+
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.axis text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  fill: var(--ink-muted);
+}
+.axis line, .axis path {
+  stroke: var(--rule);
+  shape-rendering: crispEdges;
+}
+.grid line {
+  stroke: var(--rule);
+  stroke-dasharray: 2,3;
+  opacity: 0.6;
+}
+.grid path { display: none; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 24px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.legend-line {
+  width: 22px;
+  height: 3px;
+  flex-shrink: 0;
+}
+
+.insight {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 36px 40px;
+  margin: 80px 0;
+  position: relative;
+}
+.insight::before {
+  content: '"';
+  position: absolute;
+  top: -20px;
+  left: 32px;
+  font-family: 'Fraunces', serif;
+  font-size: 120px;
+  line-height: 1;
+  color: var(--accent);
+  font-weight: 900;
+}
+.insight-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent-soft);
+  margin-bottom: 14px;
+  margin-left: 60px;
+}
+.insight-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.4;
+  margin-left: 60px;
+  max-width: 50ch;
+}
+
+/* Big numbers strip */
+.big-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 32px 0 48px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.big-num {
+  padding: 32px 24px 32px 0;
+  border-right: 1px solid var(--rule);
+}
+.big-num:last-child { border-right: 0; padding-right: 0; }
+.big-num:not(:first-child) { padding-left: 24px; }
+
+.big-num-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+  margin-bottom: 14px;
+}
+
+.big-num-value {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.big-num-value .unit {
+  font-size: 18px;
+  color: var(--ink-muted);
+  font-weight: 400;
+  font-style: italic;
+  margin-left: 4px;
+}
+
+.big-num-detail {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* Coda */
+.coda {
+  margin-top: 96px;
+  padding: 48px 0;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  text-align: center;
+}
+
+.coda-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.coda-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.35;
+  max-width: 28ch;
+  margin: 0 auto 24px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.coda-text em { font-style: italic; color: var(--accent); }
+
+.coda-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 2px;
+}
+
+.coda-link:hover { color: var(--ink); border-color: var(--ink); }
+
+.footer {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-text {
+  font-size: 12px;
+  color: var(--ink-muted);
+  max-width: 60ch;
+  line-height: 1.55;
+}
+.footer-text strong { color: var(--ink); }
+.footer-text a { color: var(--accent); text-decoration: none; }
+.footer-text a:hover { text-decoration: underline; }
+
+.byline {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: right;
+}
+.byline strong {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  font-size: 16px;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 14px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+  border: 1px solid var(--accent);
+  z-index: 100;
+  box-shadow: 4px 4px 0 var(--accent);
+  min-width: 180px;
+}
+
+/* ── SCROLL ANIMATIONS ── */
+
+/* Base hidden state — applied by JS on init so noscript still works */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger children within a reveal group */
+.reveal-children > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal-children.visible > *:nth-child(1) { transition-delay: 0s;    opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(2) { transition-delay: 0.12s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(3) { transition-delay: 0.24s; opacity: 1; transform: none; }
+.reveal-children.visible > *:nth-child(4) { transition-delay: 0.36s; opacity: 1; transform: none; }
+
+/* Slide in from left (insight block) */
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-32px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal-left.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Count-up numbers */
+.big-num-value {
+  transition: color 0.3s ease;
+}
+
+/* Pathway card hover */
+.pathway-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pathway-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(26,26,26,0.1);
+}
+
+/* Section label animated underline */
+.section-label::before {
+  width: 0;
+  transition: width 0.6s ease;
+}
+.section-label.visible::before {
+  width: 24px;
+}
+
+/* Coda entrance */
+.coda {
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 24px 18px 60px; }
+  .pathways { grid-template-columns: 1fr; }
+  .big-numbers { grid-template-columns: 1fr; }
+  .big-num { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 0; }
+  .big-num:last-child { border-bottom: 0; }
+  .big-num:not(:first-child) { padding-left: 0; padding-top: 20px; }
+  .insight { padding: 28px 24px; }
+  .insight-text { margin-left: 0; font-size: 20px; }
+  .insight-label { margin-left: 0; }
+  .insight::before { left: 16px; font-size: 80px; }
+  .coda-text { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 05 · Future Energy Scenarios 2025 · Apr 2026</div>
+  </div>
+  <hr class="thin-rule">
+
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">Three pathways. One <em>destination</em>.</h1>
+  <p class="standfirst reveal">
+    NESO's Future Energy Scenarios 2025 sets out three credible routes to net zero by 2050. They differ in
+    how much the country electrifies, how much hydrogen plays a role, and how much consumers actively engage
+    with their own demand. They agree on one thing: nothing is achieved without acceleration.
+  </p>
+
+  <!-- BIG NUMBERS -->
+  <div class="big-numbers reveal-children">
+    <div class="big-num">
+      <div class="big-num-label">Today's electricity demand</div>
+      <div class="big-num-value" data-count="290" data-suffix="TWh">290<span class="unit">TWh</span></div>
+      <div class="big-num-detail">annual GB consumption, 2024</div>
+    </div>
+    <div class="big-num">
+      <div class="big-num-label">FES 2050 demand range</div>
+      <div class="big-num-value" data-count="785" data-prefix="up to " data-suffix="TWh">up to 785<span class="unit">TWh</span></div>
+      <div class="big-num-detail">across the three pathways</div>
+    </div>
+    <div class="big-num">
+      <div class="big-num-label">EV peak flex by 2050</div>
+      <div class="big-num-value" data-count="51" data-suffix="GW">51<span class="unit">GW</span></div>
+      <div class="big-num-detail">more than today's gas fleet</div>
+    </div>
+  </div>
+
+  <!-- PATHWAYS -->
+  <div class="section reveal">
+    <div class="section-label">The three pathways</div>
+    <h2 class="section-title">Different routes, same destination</h2>
+    <p class="section-blurb">
+      FES 2025 dropped the "Counterfactual" pathway used in 2024 and now models three credible net zero
+      routes. Each makes different assumptions about how Britain decarbonises heating, transport, and
+      industry — and therefore how much electricity the system needs to deliver, when, and from where.
+    </p>
+
+    <div class="pathways reveal-children">
+      <div class="pathway-card holistic">
+        <div class="pathway-tag">Pathway 1</div>
+        <div class="pathway-name">Holistic Transition</div>
+        <div class="pathway-desc">
+          A balanced route. Mix of electrification and hydrogen, moderate consumer engagement, broad
+          deployment of all clean technologies. Used by DESNZ as the basis for the Clean Power 2030 Action Plan.
+        </div>
+        <div class="pathway-key"><strong>Signature:</strong> the "all-of-the-above" pathway — no single technology dominates.</div>
+      </div>
+
+      <div class="pathway-card electric">
+        <div class="pathway-tag">Pathway 2</div>
+        <div class="pathway-name">Electric Engagement</div>
+        <div class="pathway-desc">
+          The deepest electrification scenario. High consumer engagement with smart tariffs and flex.
+          Heat pumps dominate domestic heating; EVs dominate transport. Largest electricity demand
+          of the three.
+        </div>
+        <div class="pathway-key"><strong>Signature:</strong> highest 2050 electricity demand, deepest demand-side flex.</div>
+      </div>
+
+      <div class="pathway-card hydrogen">
+        <div class="pathway-tag">Pathway 3</div>
+        <div class="pathway-name">Hydrogen Evolution</div>
+        <div class="pathway-desc">
+          Hydrogen plays a much larger role — for industry, heavy transport, and some residential heating.
+          Lower electricity demand than Electric Engagement, but a much bigger hydrogen production and
+          storage system.
+        </div>
+        <div class="pathway-key"><strong>Signature:</strong> 98–325 TWh of hydrogen by mid-century.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMAND TRAJECTORY -->
+  <div class="section">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">Demand grows in every pathway. The question is by how much.</h2>
+    <p class="section-blurb">
+      Annual GB electricity demand from 2024 to 2050 across the three pathways. All three see demand at
+      least double by 2050. Electric Engagement reaches the upper end at ~785 TWh — nearly three times
+      today's level — driven by deeper electrification of heat and transport.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building charts</div>
+        <div class="chart-loader-source">NESO Future Energy Scenarios 2025</div>
+      </div>
+      <svg id="demand-chart" viewBox="0 0 1100 400"></svg>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:var(--path-holistic)"></div>Holistic Transition</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--path-electric)"></div>Electric Engagement</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--path-hydrogen)"></div>Hydrogen Evolution</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The signal in the noise</div>
+    <div class="insight-text">
+      FES isn't a forecast. It's a mirror. Each pathway shows what we'd have to build and change if we
+      took a particular set of choices seriously — and the gap between those pathways and current build
+      rates is where every conversation about acceleration lives.
+    </div>
+  </div>
+
+  <!-- CAPACITY BUILD -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">The capacity that has to arrive by 2030</h2>
+    <p class="section-blurb">
+      FES 2025 is the first edition where 2030 is treated as the final "pipeline-based" year — the model
+      uses known pipelines (CP30 Action Plan, Connections Reform results) to set capacity, then optimises
+      from 2031 onwards. Below is the FES 2025 average view of installed capacity by 2030, against today's level.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building charts</div>
+        <div class="chart-loader-source">NESO Future Energy Scenarios 2025</div>
+      </div>
+      <svg id="capacity-chart" viewBox="0 0 1100 460"></svg>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:var(--ink-soft);height:14px"></div>Installed today</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--accent);height:14px"></div>FES 2025 by 2030</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE GAP -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">What "acceleration" actually means</h2>
+    <p class="section-blurb">
+      The gap between current annual build rates and the build rates implied by the FES 2025 Holistic pathway
+      to 2030. For some technologies the pipeline largely exists (Connections Reform Phase 1 pipeline).
+      For others, the rate has to roughly double or triple.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building charts</div>
+        <div class="chart-loader-source">NESO Future Energy Scenarios 2025</div>
+      </div>
+      <svg id="gap-chart" viewBox="0 0 1100 380"></svg>
+    </div>
+  </div>
+
+  <!-- CODA — series close -->
+  <div class="coda reveal">
+    <div class="coda-label">— That's a wrap on post five</div>
+    <div class="coda-text">
+      Five posts. Five datasets. One <em>increasingly visible</em> grid.
+    </div>
+    <a href="index.html" class="coda-link">Read the series so far →</a>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">
+      <strong>Source.</strong> Capacity, demand, and pathway figures from
+      <a href="https://www.neso.energy/publications/future-energy-scenarios-fes" target="_blank">NESO Future Energy Scenarios 2025</a>
+      (published July 2025). Comparison capacity figures from the
+      <a href="https://www.gov.uk/government/statistics/digest-of-uk-energy-statistics-dukes-2024" target="_blank">DUKES 2024</a>
+      and Connections Reform Results.
+      <strong>Method.</strong> Demand trajectories shown as the FES 2025 mid-range for each pathway.
+      Capacity build comparison uses the average of the three FES 2025 pathways for the 2030 figure.
+      "Required build rate" calculated as (FES 2030 capacity − today's capacity) ÷ years remaining.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam Jack — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────
+   DATA — FES 2025 pathways (illustrative mid-range trajectories)
+   ──────────────────────────────────────────────────────────────── */
+
+// Annual electricity demand TWh by year, by pathway
+// FES 2025 mid-range — demand grows faster than FES 2024 across all pathways
+const demandData = {
+  years: [2024, 2030, 2035, 2040, 2045, 2050],
+  holistic:  [290, 410, 510, 600, 670, 720],
+  electric:  [290, 425, 555, 660, 740, 785],
+  hydrogen:  [290, 395, 470, 540, 600, 650]
+};
+
+// Installed capacity today vs FES 2025 average by 2030 (GW)
+const capacityData = [
+  { tech: 'Offshore Wind',         today: 15,  fes2030: 50,   color: '#4a7a8c' },
+  { tech: 'Solar',                 today: 17,  fes2030: 47,   color: '#e8b04b' },
+  { tech: 'Onshore Wind',          today: 15,  fes2030: 27,   color: '#6b8e4e' },
+  { tech: 'Battery Storage',       today: 5,   fes2030: 25,   color: '#7d5a8c' },
+  { tech: 'Long-duration Storage', today: 2.8, fes2030: 4.5,  color: '#5a4a3a' },
+  { tech: 'Nuclear',               today: 5.9, fes2030: 6.5,  color: '#5a8a9c' },
+  { tech: 'Hydrogen capacity',     today: 0.1, fes2030: 5,    color: '#b87a5a' }
+];
+
+// Required build rate vs current rate (GW per year) — Holistic pathway implied
+const gapData = [
+  { tech: 'Offshore Wind', current: 1.5, required: 5.8 },
+  { tech: 'Solar',         current: 2.2, required: 5.0 },
+  { tech: 'Onshore Wind',  current: 0.6, required: 2.0 },
+  { tech: 'Battery Storage', current: 1.5, required: 3.3 },
+  { tech: 'Heat pumps (M/yr)', current: 0.06, required: 0.45, unit: 'M/yr', scale: 10 }
+];
+
+const tooltip = d3.select('#tooltip');
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 1 — Demand trajectories
+   ──────────────────────────────────────────────────────────────── */
+function drawDemandChart() {
+  const svg = d3.select('#demand-chart');
+  const W = 1100, H = 400;
+  const margin = { top: 30, right: 100, bottom: 50, left: 70 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const years = demandData.years;
+  const x = d3.scaleLinear().domain([years[0], years[years.length - 1]]).range([0, w]);
+  const y = d3.scaleLinear().domain([0, 850]).range([h, 0]);
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+
+  // Today vertical line
+  g.append('line')
+    .attr('x1', x(2024)).attr('x2', x(2024))
+    .attr('y1', 0).attr('y2', h)
+    .attr('stroke', 'var(--ink)')
+    .attr('stroke-width', 1)
+    .attr('stroke-dasharray', '3,3')
+    .attr('opacity', 0.4);
+  g.append('text')
+    .attr('x', x(2024) + 8).attr('y', 14)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '10px')
+    .style('text-transform', 'uppercase')
+    .style('letter-spacing', '0.12em')
+    .style('fill', 'var(--ink-muted)')
+    .text('Today');
+
+  // 2030 marker
+  g.append('line')
+    .attr('x1', x(2030)).attr('x2', x(2030))
+    .attr('y1', 0).attr('y2', h)
+    .attr('stroke', 'var(--accent)')
+    .attr('stroke-width', 1)
+    .attr('stroke-dasharray', '3,3')
+    .attr('opacity', 0.45);
+  g.append('text')
+    .attr('x', x(2030) + 8).attr('y', 14)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '10px')
+    .style('text-transform', 'uppercase')
+    .style('letter-spacing', '0.12em')
+    .style('fill', 'var(--accent)')
+    .text('CP30');
+
+  const pathways = [
+    { key: 'electric',  data: demandData.electric,  color: 'var(--path-electric)',  label: 'Electric Engagement', dash: null },
+    { key: 'holistic',  data: demandData.holistic,  color: 'var(--path-holistic)',  label: 'Holistic Transition',  dash: null },
+    { key: 'hydrogen',  data: demandData.hydrogen,  color: 'var(--path-hydrogen)',  label: 'Hydrogen Evolution',   dash: null }
+  ];
+
+  const line = d3.line()
+    .x((_, i) => x(years[i]))
+    .y(d => y(d))
+    .curve(d3.curveCatmullRom);
+
+  pathways.forEach(p => {
+    g.append('path')
+      .datum(p.data)
+      .attr('d', line)
+      .attr('fill', 'none')
+      .attr('stroke', p.color)
+      .attr('stroke-width', 2.8);
+
+    // Endpoint label
+    const endVal = p.data[p.data.length - 1];
+    g.append('text')
+      .attr('x', x(years[years.length - 1]) + 10)
+      .attr('y', y(endVal) + 5)
+      .style('font-family', 'JetBrains Mono, monospace')
+      .style('font-size', '11px')
+      .style('font-weight', '500')
+      .style('fill', p.color)
+      .text(`${endVal} TWh`);
+
+    // Dots at each year
+    p.data.forEach((v, i) => {
+      g.append('circle')
+        .attr('cx', x(years[i]))
+        .attr('cy', y(v))
+        .attr('r', 3.5)
+        .attr('fill', 'var(--paper-warm)')
+        .attr('stroke', p.color)
+        .attr('stroke-width', 1.8);
+    });
+  });
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).tickValues(years).tickFormat(d3.format('d')));
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + ' TWh'));
+
+  g.append('text')
+    .attr('x', 0).attr('y', -10)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '10px')
+    .style('text-transform', 'uppercase')
+    .style('letter-spacing', '0.12em')
+    .style('fill', 'var(--ink-muted)')
+    .text('Annual electricity demand · TWh');
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 2 — Capacity today vs FES 2030 (paired bars)
+   ──────────────────────────────────────────────────────────────── */
+function drawCapacityChart() {
+  const svg = d3.select('#capacity-chart');
+  const W = 1100, H = 460;
+  const margin = { top: 30, right: 80, bottom: 40, left: 200 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const xMax = d3.max(capacityData, d => d.fes2030) * 1.15;
+  const x = d3.scaleLinear().domain([0, xMax]).range([0, w]);
+  const y = d3.scaleBand().domain(capacityData.map(d => d.tech)).range([0, h]).padding(0.25);
+
+  g.append('g').attr('class', 'grid')
+    .call(d3.axisBottom(x).tickSize(h).tickFormat('').ticks(5))
+    .attr('transform', 'translate(0,0)');
+
+  // Today bars (background)
+  g.selectAll('.bar-today')
+    .data(capacityData)
+    .join('rect')
+    .attr('x', 0)
+    .attr('y', d => y(d.tech))
+    .attr('width', d => x(d.today))
+    .attr('height', y.bandwidth() / 2 - 2)
+    .attr('fill', 'var(--ink-soft)')
+    .attr('opacity', 0.55);
+
+  // FES 2030 bars
+  g.selectAll('.bar-fes')
+    .data(capacityData)
+    .join('rect')
+    .attr('x', 0)
+    .attr('y', d => y(d.tech) + y.bandwidth() / 2 + 2)
+    .attr('width', d => x(d.fes2030))
+    .attr('height', y.bandwidth() / 2 - 2)
+    .attr('fill', 'var(--accent)');
+
+  // Labels
+  g.selectAll('.bar-today-label')
+    .data(capacityData)
+    .join('text')
+    .attr('x', d => x(d.today) + 8)
+    .attr('y', d => y(d.tech) + y.bandwidth() / 4 + 5)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '11px')
+    .style('fill', 'var(--ink-soft)')
+    .text(d => d.today + ' GW');
+
+  g.selectAll('.bar-fes-label')
+    .data(capacityData)
+    .join('text')
+    .attr('x', d => x(d.fes2030) + 8)
+    .attr('y', d => y(d.tech) + y.bandwidth() * 3 / 4 + 5)
+    .style('font-family', 'Fraunces, serif')
+    .style('font-size', '15px')
+    .style('font-weight', '500')
+    .style('fill', 'var(--ink)')
+    .text(d => d.fes2030 + ' GW');
+
+  // Y axis
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(12))
+    .select('.domain').remove();
+  g.selectAll('.axis text')
+    .style('font-family', 'Inter Tight, sans-serif')
+    .style('font-size', '13px')
+    .style('font-weight', '500')
+    .style('fill', 'var(--ink)');
+
+  g.append('g').attr('class', 'axis')
+    .attr('transform', `translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + ' GW'));
+}
+
+/* ────────────────────────────────────────────────────────────────
+   CHART 3 — Build rate gap
+   ──────────────────────────────────────────────────────────────── */
+function drawGapChart() {
+  const svg = d3.select('#gap-chart');
+  const W = 1100, H = 380;
+  const margin = { top: 30, right: 160, bottom: 50, left: 200 };
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Normalise each row to its own scale because units differ
+  const y = d3.scaleBand().domain(gapData.map(d => d.tech)).range([0, h]).padding(0.25);
+
+  // Bars fill the available width; labels sit outside to the right
+  const maxX = w;
+
+  gapData.forEach(d => {
+    const ratio = d.required / d.current;
+    const currentWidth = maxX / ratio;
+    const requiredWidth = maxX;
+    const yPos = y(d.tech);
+    const barH = y.bandwidth() / 2 - 2;
+
+    // Current bar
+    g.append('rect')
+      .attr('x', 0)
+      .attr('y', yPos)
+      .attr('width', currentWidth)
+      .attr('height', barH)
+      .attr('fill', 'var(--ink-soft)')
+      .attr('opacity', 0.55);
+
+    // Required bar
+    g.append('rect')
+      .attr('x', 0)
+      .attr('y', yPos + y.bandwidth() / 2 + 2)
+      .attr('width', requiredWidth)
+      .attr('height', barH)
+      .attr('fill', 'var(--accent)');
+
+    // Current label — inside bar if wide enough, else outside
+    const unit = d.unit || 'GW/yr';
+    const currentLabelX = currentWidth > 120 ? currentWidth - 8 : currentWidth + 8;
+    const currentLabelAnchor = currentWidth > 120 ? 'end' : 'start';
+    g.append('text')
+      .attr('x', currentLabelX)
+      .attr('y', yPos + barH / 2 + 4)
+      .attr('text-anchor', currentLabelAnchor)
+      .style('font-family', 'JetBrains Mono, monospace')
+      .style('font-size', '11px')
+      .style('fill', currentWidth > 120 ? 'var(--paper)' : 'var(--ink-soft)')
+      .style('opacity', currentWidth > 120 ? 0.85 : 1)
+      .text(`Now: ${d.current} ${unit}`);
+
+    // Multiplier badge inside required bar
+    const multiplier = (d.required / d.current).toFixed(1);
+    g.append('text')
+      .attr('x', requiredWidth - 14)
+      .attr('y', yPos + y.bandwidth() / 2 + 2 + barH / 2 + 4)
+      .attr('text-anchor', 'end')
+      .style('font-family', 'JetBrains Mono, monospace')
+      .style('font-size', '11px')
+      .style('font-weight', '500')
+      .style('fill', 'var(--paper)')
+      .text(`${multiplier}× current rate`);
+
+    // Required label — outside bar to the right, within the right margin
+    g.append('text')
+      .attr('x', requiredWidth + 12)
+      .attr('y', yPos + y.bandwidth() / 2 + 2 + barH / 2 + 4)
+      .style('font-family', 'Fraunces, serif')
+      .style('font-size', '13px')
+      .style('font-weight', '500')
+      .style('fill', 'var(--ink)')
+      .text(`Need: ${d.required} ${unit}`);
+  });
+
+  g.append('g').attr('class', 'axis')
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(12))
+    .select('.domain').remove();
+  g.selectAll('.axis text')
+    .style('font-family', 'Inter Tight, sans-serif')
+    .style('font-size', '13px')
+    .style('font-weight', '500')
+    .style('fill', 'var(--ink)');
+
+  g.append('text')
+    .attr('x', 0).attr('y', -10)
+    .style('font-family', 'JetBrains Mono, monospace')
+    .style('font-size', '10px')
+    .style('text-transform', 'uppercase')
+    .style('letter-spacing', '0.12em')
+    .style('fill', 'var(--ink-muted)')
+    .text('Current build rate vs required (each tech on its own scale)');
+}
+
+/* ────────────────────────────────────────────────────────────────
+   SCROLL ANIMATION SYSTEM
+   ──────────────────────────────────────────────────────────────── */
+
+function hideLoaders() {
+  document.querySelectorAll('[data-loader]').forEach((el, i) => {
+    setTimeout(() => el.classList.add('hidden'), i * 120);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, i * 120 + 600);
+  });
+}
+
+// Count-up animation
+function countUp(el, target, duration, prefix, suffix) {
+  const unit = el.querySelector('.unit');
+  const unitHtml = unit ? unit.outerHTML : '';
+  let start = 0;
+  const step = target / (duration / 16);
+  const timer = setInterval(() => {
+    start = Math.min(start + step, target);
+    const val = Math.round(start);
+    el.innerHTML = (prefix || '') + val + unitHtml;
+    if (start >= target) clearInterval(timer);
+  }, 16);
+}
+
+// Track which charts have been drawn
+const chartsDrawn = { demand: false, capacity: false, gap: false };
+
+// General reveal observer (fade + rise)
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add('visible');
+    revealObs.unobserve(entry.target);
+  });
+}, { threshold: 0.12 });
+
+// Count-up observer for big numbers strip
+const countObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.querySelectorAll('[data-count]').forEach((el, i) => {
+      const target = +el.getAttribute('data-count');
+      const prefix = el.getAttribute('data-prefix') || '';
+      const suffix = el.getAttribute('data-suffix') || '';
+      setTimeout(() => countUp(el, target, 1400, prefix, suffix), i * 180);
+    });
+    countObs.unobserve(entry.target);
+  });
+}, { threshold: 0.3 });
+
+// Chart observer — draw each chart only as it enters the viewport
+const chartObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const svg = entry.target.querySelector('svg');
+    if (!svg) return;
+    const id = svg.id;
+    if (id === 'demand-chart' && !chartsDrawn.demand) {
+      chartsDrawn.demand = true;
+      drawDemandChart();
+    } else if (id === 'capacity-chart' && !chartsDrawn.capacity) {
+      chartsDrawn.capacity = true;
+      drawCapacityChart();
+    } else if (id === 'gap-chart' && !chartsDrawn.gap) {
+      chartsDrawn.gap = true;
+      drawGapChart();
+    }
+    hideLoaders();
+    chartObs.unobserve(entry.target);
+  });
+}, { threshold: 0.1 });
+
+// Section label line animation
+const labelObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add('visible');
+    labelObs.unobserve(entry.target);
+  });
+}, { threshold: 0.5 });
+
+// Init — attach observers
+document.querySelectorAll('.reveal, .reveal-left, .reveal-children').forEach(el => revealObs.observe(el));
+document.querySelector('.big-numbers') && countObs.observe(document.querySelector('.big-numbers'));
+document.querySelectorAll('.chart-frame').forEach(el => chartObs.observe(el));
+document.querySelectorAll('.section-label').forEach(el => labelObs.observe(el));
+
+window.addEventListener('resize', () => {
+  if (chartsDrawn.demand)   drawDemandChart();
+  if (chartsDrawn.capacity) drawCapacityChart();
+  if (chartsDrawn.gap)      drawGapChart();
+});
+</script>
+
+</body>
+</html>
