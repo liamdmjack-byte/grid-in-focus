@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The quiet revolution on your street — The Grid in Focus #07</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-muted: #6b6b6b;
+  --paper: #f4f1ea;
+  --paper-warm: #ebe6db;
+  --rule: #d4ccba;
+  --accent: #c4451c;
+  --accent-soft: #e8a48a;
+
+  /* LCT palette */
+  --ev:      #4a7a8c;
+  --hp:      #c4451c;
+  --solar:   #e8b04b;
+  --battery: #6b8e4e;
+  --other:   #7d5a8c;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(196,69,28,0.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(74,122,140,0.04) 0%, transparent 40%);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 1;
+}
+
+.container { max-width: 1180px; margin: 0 auto; padding: 48px 32px 80px; position: relative; z-index: 2; }
+
+/* ── MASTHEAD ── */
+.masthead { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 14px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; }
+.series-mark { font-family: 'Fraunces', serif; font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: -0.01em; }
+.series-mark a { text-decoration: none; color: inherit; }
+.series-mark span { font-style: normal; color: var(--accent); }
+.meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); }
+.meta.loading { display: flex; align-items: center; gap: 10px; }
+.meta.loading::before { content: ''; width: 8px; height: 8px; background: var(--accent); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+.thin-rule { border: 0; border-top: 1px solid var(--rule); margin-bottom: 56px; }
+
+/* ── BACK BUTTON ── */
+.back-btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); text-decoration: none; margin-bottom: 40px; padding: 8px 0; border-bottom: 1px solid transparent; transition: color .2s, border-color .2s; }
+.back-btn:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.back-btn::before { content: '←'; font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; transition: transform .2s; }
+.back-btn:hover::before { transform: translateX(-4px); }
+
+/* ── HEADLINE ── */
+.headline { font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(40px,6vw,72px); line-height: 1.02; letter-spacing: -0.025em; margin-bottom: 28px; max-width: 20ch; }
+.headline em { font-style: italic; font-weight: 400; color: var(--accent); }
+.standfirst { font-family: 'Fraunces', serif; font-weight: 400; font-size: 22px; line-height: 1.45; color: var(--ink-soft); max-width: 60ch; margin-bottom: 64px; padding-left: 24px; border-left: 3px solid var(--accent); }
+
+/* ── STATS STRIP ── */
+.stats-strip { display: grid; grid-template-columns: repeat(4,1fr); margin-bottom: 72px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.stat { padding: 28px 24px 28px 0; border-right: 1px solid var(--rule); }
+.stat:last-child { border-right: 0; padding-right: 0; }
+.stat:not(:first-child) { padding-left: 24px; }
+.stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-muted); margin-bottom: 12px; }
+.stat-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 38px; line-height: 1; letter-spacing: -0.02em; margin-bottom: 6px; }
+.stat-value .unit { font-size: 16px; color: var(--ink-muted); font-weight: 400; margin-left: 4px; }
+.stat-detail { font-size: 13px; color: var(--ink-muted); }
+
+/* ── SECTION ── */
+.section { margin-bottom: 72px; }
+.section-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.section-label::before { content: ''; width: 24px; height: 1px; background: var(--accent); }
+.section-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; margin-bottom: 12px; max-width: 32ch; }
+.section-blurb { font-size: 15px; color: var(--ink-soft); margin-bottom: 32px; }
+
+/* ── CHART FRAME ── */
+.chart-frame { background: var(--paper-warm); border: 1px solid var(--rule); padding: 32px 24px 24px; position: relative; }
+.chart-frame::before { content: ''; position: absolute; top: -1px; left: -1px; width: 12px; height: 12px; border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+.chart-frame::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 12px; height: 12px; border-bottom: 2px solid var(--ink); border-right: 2px solid var(--ink); }
+
+/* ── CHART LOADER ── */
+.chart-loader { position: absolute; inset: 0; background: var(--paper-warm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 5; transition: opacity 0.45s ease; }
+.chart-loader.hidden { opacity: 0; pointer-events: none; }
+.chart-loader-bars { display: flex; align-items: flex-end; gap: 6px; height: 44px; }
+.chart-loader-bars span { display: block; width: 8px; border-radius: 1px; animation: bar-pulse 1.1s ease-in-out infinite; transform-origin: bottom; }
+.chart-loader-bars span:nth-child(1) { animation-delay:0s;    height:60%; background:var(--ev); }
+.chart-loader-bars span:nth-child(2) { animation-delay:0.12s; height:90%; background:var(--hp); }
+.chart-loader-bars span:nth-child(3) { animation-delay:0.24s; height:45%; background:var(--solar); }
+.chart-loader-bars span:nth-child(4) { animation-delay:0.36s; height:80%; background:var(--battery); }
+.chart-loader-bars span:nth-child(5) { animation-delay:0.48s; height:55%; background:var(--other); }
+@keyframes bar-pulse { 0%,100%{transform:scaleY(.35);opacity:.55} 50%{transform:scaleY(1);opacity:1} }
+.chart-loader-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-soft); }
+.chart-loader-label::after { content: '...'; display: inline-block; width: 1.2em; animation: dots 1.4s steps(4,end) infinite; overflow: hidden; }
+@keyframes dots { 0%{width:0} 100%{width:1.2em} }
+.chart-loader-source { font-family: 'Fraunces', serif; font-style: italic; font-size: 12px; color: var(--ink-muted); }
+
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-muted); }
+.axis line, .axis path { stroke: var(--rule); shape-rendering: crispEdges; }
+.grid line { stroke: var(--rule); stroke-dasharray: 2,3; opacity: 0.6; }
+.grid path { display: none; }
+
+/* ── LCT LEGEND ── */
+.lct-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.lct-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 7px 14px; border: 1px solid var(--rule);
+  background: var(--paper-warm); cursor: pointer;
+  transition: all 0.2s; user-select: none;
+}
+.lct-toggle .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; transition: opacity 0.2s; }
+.lct-toggle:hover { border-color: var(--ink); }
+.lct-toggle.off { opacity: 0.38; }
+.lct-toggle.off .swatch { opacity: 0.3; }
+
+/* ── LIVE STRIP ── */
+.live-strip { background: var(--ink); color: var(--paper); padding: 28px 32px; margin-bottom: 48px; display: grid; grid-template-columns: 1.4fr 1px 1fr 1px 1fr 1px 1fr; gap: 0 28px; align-items: center; }
+.live-strip-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent-soft); margin-bottom: 6px; }
+.live-strip-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 32px; line-height: 1; letter-spacing: -0.02em; }
+.live-strip-unit { font-size: 13px; color: var(--accent-soft); font-weight: 400; margin-left: 4px; }
+.live-strip-detail { font-size: 12px; color: rgba(244,241,234,0.5); margin-top: 4px; }
+.live-indicator { display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-soft); margin-bottom: 8px; }
+.live-indicator::before { content: ''; width: 6px; height: 6px; background: #6b8e4e; border-radius: 50%; animation: pulse 1.5s infinite; }
+.live-strip-divider { width: 1px; background: rgba(244,241,234,0.15); align-self: stretch; }
+
+/* ── CALL-OUT BOX ── */
+.callout { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 4px solid var(--accent); padding: 24px 28px; margin-top: 32px; }
+.callout-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 10px; }
+.callout-text { font-family: 'Fraunces', serif; font-size: 18px; line-height: 1.5; color: var(--ink); }
+
+/* ── INSIGHT ── */
+.insight { background: var(--ink); color: var(--paper); padding: 36px 40px; margin: 80px 0; position: relative; }
+.insight::before { content: '"'; position: absolute; top: -20px; left: 32px; font-family: 'Fraunces', serif; font-size: 120px; line-height: 1; color: var(--accent); font-weight: 900; }
+.insight-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent-soft); margin-bottom: 14px; margin-left: 60px; }
+.insight-text { font-family: 'Fraunces', serif; font-weight: 400; font-size: 26px; line-height: 1.4; margin-left: 60px; max-width: 50ch; }
+
+/* ── INTERACTIVE STREET MODEL ── */
+.slider-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--rule);
+  background: var(--paper-warm);
+}
+.slider-item {
+  padding: 20px 24px;
+  border-right: 1px solid var(--rule);
+}
+.slider-item:last-child { border-right: 0; }
+.slider-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-muted); margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.slider-val {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 28px; line-height: 1; letter-spacing: -0.02em;
+}
+.slider-val span { font-size: 14px; color: var(--ink-muted); font-weight: 400; }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--rule); outline: none; margin-top: 10px; cursor: pointer;
+  border-radius: 2px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ink); cursor: pointer; border: 2px solid var(--paper-warm);
+  transition: background 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover { background: var(--accent); }
+input[type=range]#ev-slider::-webkit-slider-thumb { background: var(--ev); }
+input[type=range]#hp-slider::-webkit-slider-thumb { background: var(--hp); }
+input[type=range]#solar-slider::-webkit-slider-thumb { background: var(--battery); }
+
+.load-meter {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 24px; background: var(--ink); color: var(--paper);
+  margin-bottom: 24px;
+}
+.load-meter-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent-soft);
+  margin-bottom: 4px;
+}
+.load-meter-value {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 36px; line-height: 1; letter-spacing: -0.02em;
+}
+.load-meter-value span { font-size: 14px; color: var(--accent-soft); margin-left: 4px; }
+.load-bar-wrap {
+  flex: 1; background: rgba(255,255,255,0.1); height: 12px; border-radius: 2px; overflow: hidden;
+}
+.load-bar {
+  height: 100%; background: var(--battery); transition: width 0.4s ease, background 0.4s ease;
+  border-radius: 2px;
+}
+.load-status {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 4px 10px; border-radius: 2px; white-space: nowrap;
+  font-weight: 500;
+}
+.load-status.ok { background: rgba(107,142,78,0.25); color: #8ec46a; }
+.load-status.warn { background: rgba(232,176,75,0.25); color: #e8b04b; }
+.load-status.over { background: rgba(196,69,28,0.25); color: var(--accent-soft); }
+.explainer-note {
+  font-size: 13px; color: var(--ink-soft); line-height: 1.6;
+  padding: 14px 18px; background: var(--paper-warm);
+  border-left: 3px solid var(--rule); margin-bottom: 20px;
+}
+.explainer-note strong { color: var(--ink); }
+.explainer-icon { color: var(--ink-muted); margin-right: 6px; }
+.load-explainer {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: 14px; color: var(--ink-muted); line-height: 1.55;
+  padding: 10px 0 20px;
+  transition: color 0.3s;
+}
+.load-explainer.warn { color: #8a6010; }
+.load-explainer.over { color: var(--accent); font-style: normal; font-weight: 500; }
+#chart-tooltip { position: fixed; background: var(--ink); color: var(--paper); padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 999; border: 1px solid var(--accent); box-shadow: 3px 3px 0 var(--accent); max-width: 240px; }
+#chart-tooltip.visible { opacity: 1; }
+
+/* ── FOOTER ── */
+.footer { margin-top: 96px; padding-top: 24px; border-top: 2px solid var(--ink); display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+.footer-text { font-size: 12px; color: var(--ink-muted); max-width: 60ch; line-height: 1.55; }
+.footer-text strong { color: var(--ink); }
+.footer-text a { color: var(--accent); text-decoration: none; }
+.footer-text a:hover { text-decoration: underline; }
+.byline { font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); text-align: right; }
+.byline strong { font-style: normal; font-weight: 700; color: var(--ink); display: block; font-size: 16px; }
+
+/* ── SCROLL ANIMATIONS ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+.reveal-children > * { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.reveal-children.visible > *:nth-child(1) { transition-delay:0s;    opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(2) { transition-delay:0.12s; opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(3) { transition-delay:0.24s; opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(4) { transition-delay:0.36s; opacity:1; transform:none; }
+.reveal-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal-left.visible { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .container { padding: 24px 18px 60px; }
+  .stats-strip { grid-template-columns: repeat(2,1fr); }
+  .stat { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 16px; }
+  .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0; }
+  .live-strip { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .live-strip-divider { display: none; }
+  .insight { padding: 28px 24px; }
+  .insight-text { margin-left: 0; font-size: 20px; }
+  .insight-label { margin-left: 0; }
+  .insight::before { left: 16px; font-size: 80px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta loading" id="meta-stamp">Fetching live grid data</div>
+  </div>
+  <hr class="thin-rule">
+
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">The quiet revolution on <em>your street</em>.</h1>
+  <p class="standfirst reveal">
+    EVs, heat pumps, solar panels, home batteries. They're connecting to Britain's local electricity
+    network at a pace it was never designed for. The wires under your road are becoming the front line
+    of the energy transition — and most people have no idea.
+  </p>
+
+  <!-- STATS STRIP -->
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">EVs on UK roads</div>
+      <div class="stat-value">1.8<span class="unit">m</span></div>
+      <div class="stat-detail">plus 1m plug-in hybrids, 2025</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Heat pumps installed 2025</div>
+      <div class="stat-value">51.9<span class="unit">k</span></div>
+      <div class="stat-detail">4.5x the rate of five years ago</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Public EV charge points</div>
+      <div class="stat-value">73.7<span class="unit">k</span></div>
+      <div class="stat-detail">+38% year-on-year, end 2024</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">UK electricity demand 2025</div>
+      <div class="stat-value">322<span class="unit">TWh</span></div>
+      <div class="stat-detail">First two-year rise in 20 years</div>
+    </div>
+  </div>
+
+  <!-- FIGURE 01: LCT GROWTH CHART -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">How fast are low-carbon technologies connecting?</h2>
+    <p class="section-blurb">
+      Annual UK installations across the four key low-carbon technologies since 2019.
+      Each one connects to the local distribution network — the cables and substations that serve homes and businesses.
+      The growth in every category is accelerating, and the local network has to absorb it all.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">DESNZ · SMMT · Zapmap · UKPN DFES 2025</div>
+      </div>
+      <svg id="lct-growth" viewBox="0 0 1100 420"></svg>
+      <div class="lct-legend" id="lct-legend"></div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">Why this matters for the local grid</div>
+      <div class="callout-text">
+        A typical gas boiler draws nothing from the electricity network. Replace it with a heat pump and
+        you're adding 2-4 kW of continuous electrical load. Add an EV charger and that's another 7 kW
+        in the evening. The street-level cables and transformers that serve your home were often installed
+        in the 1960s and rated for a fraction of this. When enough homes on one street upgrade simultaneously,
+        the local network can hit its limit — and someone's connection gets delayed or refused.
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The bottleneck nobody talks about</div>
+    <div class="insight-text">
+      The transmission queue — 700+ GW of projects waiting — gets all the headlines.
+      But for most households, the real queue is local: the LV substation on your street,
+      and how much headroom it has left.
+    </div>
+  </div>
+
+  <!-- FIGURE 02: LIVE CARBON INTENSITY STRIP -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Live data</div>
+    <h2 class="section-title">What the grid looks like right now</h2>
+    <p class="section-blurb">
+      As more homes electrify, the carbon case for doing so gets stronger every year — because the grid
+      is getting cleaner. The numbers below are live, pulled from the Carbon Intensity API on page load.
+      They show why switching to electric makes more sense today than ever before.
+    </p>
+
+    <div class="live-indicator" style="margin-bottom:10px">Live — updated on load</div>
+    <div class="live-strip" id="live-strip">
+      <div>
+        <div class="live-strip-label">Carbon intensity right now</div>
+        <div class="live-strip-value" id="live-intensity">--<span class="live-strip-unit">gCO₂/kWh</span></div>
+        <div class="live-strip-detail" id="live-intensity-detail">Fetching...</div>
+      </div>
+      <div class="live-strip-divider"></div>
+      <div>
+        <div class="live-strip-label">Index</div>
+        <div class="live-strip-value" id="live-index" style="font-size:22px">--</div>
+        <div class="live-strip-detail">vs 24hr rolling avg</div>
+      </div>
+      <div class="live-strip-divider"></div>
+      <div>
+        <div class="live-strip-label">Biggest source</div>
+        <div class="live-strip-value" id="live-top-source" style="font-size:22px">--</div>
+        <div class="live-strip-detail" id="live-top-pct">Fetching...</div>
+      </div>
+      <div class="live-strip-divider"></div>
+      <div>
+        <div class="live-strip-label">Low-carbon share</div>
+        <div class="live-strip-value" id="live-lowcarbon">--%</div>
+        <div class="live-strip-detail">renewables + nuclear</div>
+      </div>
+    </div>
+
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Fetching live generation mix</div>
+        <div class="chart-loader-source">api.carbonintensity.org.uk</div>
+      </div>
+      <svg id="mix-chart" viewBox="0 0 1100 320"></svg>
+    </div>
+  </div>
+
+  <!-- FIGURE 03: THE MATHS OF ELECTRIFICATION -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03 — Interactive</div>
+    <h2 class="section-title">What electrifying a street actually adds up to</h2>
+    <p class="section-blurb">
+        A typical residential street of 40 homes, with a substation rated at 500 kVA.
+        Use the sliders to set how many homes have each technology — and watch the
+        substation load update in real time. See exactly when the network hits its limit.
+      </p>
+
+    <!-- Slider controls -->
+
+    <div class="slider-panel">
+      <div class="slider-item">
+        <div class="slider-label">
+          <span style="color:var(--ev)">&#9632; EV chargers</span>
+          <span class="slider-val" id="ev-val">0<span>%</span></span>
+        </div>
+        <input type="range" id="ev-slider" min="0" max="100" step="5" value="0">
+      </div>
+      <div class="slider-item">
+        <div class="slider-label">
+          <span style="color:var(--hp)">&#9632; Heat pumps</span>
+          <span class="slider-val" id="hp-val">0<span>%</span></span>
+        </div>
+        <input type="range" id="hp-slider" min="0" max="100" step="5" value="0">
+      </div>
+      <div class="slider-item">
+        <div class="slider-label">
+          <span style="color:var(--battery)">&#9632; Solar panels</span>
+          <span class="slider-val" id="solar-val">0<span>%</span></span>
+        </div>
+        <input type="range" id="solar-slider" min="0" max="100" step="5" value="0">
+      </div>
+    </div>
+
+    <div class="explainer-note">
+      <span class="explainer-icon">ℹ</span>
+      Each slider controls how many of the 40 homes on a typical street have that technology.
+      A <strong>7 kW EV charger</strong> adds roughly 4.8 kVA per home at evening peak (after diversity).
+      A <strong>heat pump</strong> adds around 2.2 kVA. <strong>Solar panels</strong> offset load —
+      but only during daylight hours, not at the evening peak when the grid is most stressed.
+    </div>
+
+    <!-- Live load meter -->
+    <div class="load-meter">
+      <div>
+        <div class="load-meter-label">Current substation load</div>
+        <div class="load-meter-value" id="load-value">120<span>kVA</span></div>
+      </div>
+      <div class="load-bar-wrap">
+        <div class="load-bar" id="load-bar" style="width:24%"></div>
+      </div>
+      <div>
+        <div class="load-meter-label">of 500 kVA capacity</div>
+        <div class="load-status ok" id="load-status">Within limits</div>
+      </div>
+    </div>
+    <div class="load-explainer" id="load-explainer">
+      At the current settings, the substation is operating comfortably within its rated capacity.
+      Drag the EV and heat pump sliders right to see how quickly demand can build.
+    </div>
+
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building model</div>
+        <div class="chart-loader-source">Illustrative model — based on published DNO load data</div>
+      </div>
+      <svg id="street-chart" viewBox="0 0 1100 380"></svg>
+    </div>
+    <div class="callout">
+      <div class="callout-label">What happens when the limit is hit</div>
+      <div class="callout-text">
+        DNOs have to upgrade transformers and cables before they can allow more connections.
+        In practice this can take months to years, and the cost — which is ultimately socialised
+        through network charges — runs to thousands of pounds per property.
+        Smart charging and flexibility markets can help flatten the peak, but the infrastructure
+        still needs to be there underneath.
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-text">
+      <strong>LCT growth data.</strong> EV figures from SMMT and Carbon Brief analysis of DESNZ data.
+      Heat pump installations from DESNZ Heat Pump Statistics (March 2026 release).
+      Public charge points from Zapmap / DESNZ EV Infrastructure statistics.
+      UK electricity demand from Carbon Brief / NESO.
+      <strong>Live data.</strong> Carbon intensity and generation mix from the
+      <a href="https://api.carbonintensity.org.uk" target="_blank">Carbon Intensity API</a>
+      (NESO / University of Oxford), loaded on page render.
+      <strong>Street model (Figure 03).</strong> Illustrative model based on published DNO load
+      estimates for residential LCT uptake. Substation capacity figure is typical for a UK residential
+      secondary substation; actual limits vary by area and age of asset.
+    </div>
+    <div class="byline">
+      The Grid in Focus<br>
+      <strong>Liam Jack — Energy Networks</strong>
+    </div>
+  </div>
+
+</div>
+
+<div id="chart-tooltip"></div>
+<style>
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-muted: #6b6b6b;
+  --paper: #f4f1ea;
+  --paper-warm: #ebe6db;
+  --rule: #d4ccba;
+  --accent: #c4451c;
+  --accent-soft: #e8a48a;
+
+  /* LCT palette */
+  --ev:      #4a7a8c;
+  --hp:      #c4451c;
+  --solar:   #e8b04b;
+  --battery: #6b8e4e;
+  --other:   #7d5a8c;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(196,69,28,0.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(74,122,140,0.04) 0%, transparent 40%);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 1;
+}
+
+.container { max-width: 1180px; margin: 0 auto; padding: 48px 32px 80px; position: relative; z-index: 2; }
+
+/* ── MASTHEAD ── */
+.masthead { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 14px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; }
+.series-mark { font-family: 'Fraunces', serif; font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: -0.01em; }
+.series-mark a { text-decoration: none; color: inherit; }
+.series-mark span { font-style: normal; color: var(--accent); }
+.meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); }
+.meta.loading { display: flex; align-items: center; gap: 10px; }
+.meta.loading::before { content: ''; width: 8px; height: 8px; background: var(--accent); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+.thin-rule { border: 0; border-top: 1px solid var(--rule); margin-bottom: 56px; }
+
+/* ── BACK BUTTON ── */
+.back-btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); text-decoration: none; margin-bottom: 40px; padding: 8px 0; border-bottom: 1px solid transparent; transition: color .2s, border-color .2s; }
+.back-btn:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.back-btn::before { content: '←'; font-family: 'Fraunces', serif; font-style: italic; font-size: 16px; transition: transform .2s; }
+.back-btn:hover::before { transform: translateX(-4px); }
+
+/* ── HEADLINE ── */
+.headline { font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(40px,6vw,72px); line-height: 1.02; letter-spacing: -0.025em; margin-bottom: 28px; max-width: 20ch; }
+.headline em { font-style: italic; font-weight: 400; color: var(--accent); }
+.standfirst { font-family: 'Fraunces', serif; font-weight: 400; font-size: 22px; line-height: 1.45; color: var(--ink-soft); max-width: 60ch; margin-bottom: 64px; padding-left: 24px; border-left: 3px solid var(--accent); }
+
+/* ── STATS STRIP ── */
+.stats-strip { display: grid; grid-template-columns: repeat(4,1fr); margin-bottom: 72px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.stat { padding: 28px 24px 28px 0; border-right: 1px solid var(--rule); }
+.stat:last-child { border-right: 0; padding-right: 0; }
+.stat:not(:first-child) { padding-left: 24px; }
+.stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-muted); margin-bottom: 12px; }
+.stat-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 38px; line-height: 1; letter-spacing: -0.02em; margin-bottom: 6px; }
+.stat-value .unit { font-size: 16px; color: var(--ink-muted); font-weight: 400; margin-left: 4px; }
+.stat-detail { font-size: 13px; color: var(--ink-muted); }
+
+/* ── SECTION ── */
+.section { margin-bottom: 72px; }
+.section-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.section-label::before { content: ''; width: 24px; height: 1px; background: var(--accent); }
+.section-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; margin-bottom: 12px; max-width: 32ch; }
+.section-blurb { font-size: 15px; color: var(--ink-soft); margin-bottom: 32px; }
+
+/* ── CHART FRAME ── */
+.chart-frame { background: var(--paper-warm); border: 1px solid var(--rule); padding: 32px 24px 24px; position: relative; }
+.chart-frame::before { content: ''; position: absolute; top: -1px; left: -1px; width: 12px; height: 12px; border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+.chart-frame::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 12px; height: 12px; border-bottom: 2px solid var(--ink); border-right: 2px solid var(--ink); }
+
+/* ── CHART LOADER ── */
+.chart-loader { position: absolute; inset: 0; background: var(--paper-warm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 5; transition: opacity 0.45s ease; }
+.chart-loader.hidden { opacity: 0; pointer-events: none; }
+.chart-loader-bars { display: flex; align-items: flex-end; gap: 6px; height: 44px; }
+.chart-loader-bars span { display: block; width: 8px; border-radius: 1px; animation: bar-pulse 1.1s ease-in-out infinite; transform-origin: bottom; }
+.chart-loader-bars span:nth-child(1) { animation-delay:0s;    height:60%; background:var(--ev); }
+.chart-loader-bars span:nth-child(2) { animation-delay:0.12s; height:90%; background:var(--hp); }
+.chart-loader-bars span:nth-child(3) { animation-delay:0.24s; height:45%; background:var(--solar); }
+.chart-loader-bars span:nth-child(4) { animation-delay:0.36s; height:80%; background:var(--battery); }
+.chart-loader-bars span:nth-child(5) { animation-delay:0.48s; height:55%; background:var(--other); }
+@keyframes bar-pulse { 0%,100%{transform:scaleY(.35);opacity:.55} 50%{transform:scaleY(1);opacity:1} }
+.chart-loader-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-soft); }
+.chart-loader-label::after { content: '...'; display: inline-block; width: 1.2em; animation: dots 1.4s steps(4,end) infinite; overflow: hidden; }
+@keyframes dots { 0%{width:0} 100%{width:1.2em} }
+.chart-loader-source { font-family: 'Fraunces', serif; font-style: italic; font-size: 12px; color: var(--ink-muted); }
+
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-muted); }
+.axis line, .axis path { stroke: var(--rule); shape-rendering: crispEdges; }
+.grid line { stroke: var(--rule); stroke-dasharray: 2,3; opacity: 0.6; }
+.grid path { display: none; }
+
+/* ── LCT LEGEND ── */
+.lct-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.lct-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 7px 14px; border: 1px solid var(--rule);
+  background: var(--paper-warm); cursor: pointer;
+  transition: all 0.2s; user-select: none;
+}
+.lct-toggle .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; transition: opacity 0.2s; }
+.lct-toggle:hover { border-color: var(--ink); }
+.lct-toggle.off { opacity: 0.38; }
+.lct-toggle.off .swatch { opacity: 0.3; }
+
+/* ── LIVE STRIP ── */
+.live-strip { background: var(--ink); color: var(--paper); padding: 28px 32px; margin-bottom: 48px; display: grid; grid-template-columns: 1.4fr 1px 1fr 1px 1fr 1px 1fr; gap: 0 28px; align-items: center; }
+.live-strip-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent-soft); margin-bottom: 6px; }
+.live-strip-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 32px; line-height: 1; letter-spacing: -0.02em; }
+.live-strip-unit { font-size: 13px; color: var(--accent-soft); font-weight: 400; margin-left: 4px; }
+.live-strip-detail { font-size: 12px; color: rgba(244,241,234,0.5); margin-top: 4px; }
+.live-indicator { display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-soft); margin-bottom: 8px; }
+.live-indicator::before { content: ''; width: 6px; height: 6px; background: #6b8e4e; border-radius: 50%; animation: pulse 1.5s infinite; }
+.live-strip-divider { width: 1px; background: rgba(244,241,234,0.15); align-self: stretch; }
+
+/* ── CALL-OUT BOX ── */
+.callout { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 4px solid var(--accent); padding: 24px 28px; margin-top: 32px; }
+.callout-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 10px; }
+.callout-text { font-family: 'Fraunces', serif; font-size: 18px; line-height: 1.5; color: var(--ink); }
+
+/* ── INSIGHT ── */
+.insight { background: var(--ink); color: var(--paper); padding: 36px 40px; margin: 80px 0; position: relative; }
+.insight::before { content: '"'; position: absolute; top: -20px; left: 32px; font-family: 'Fraunces', serif; font-size: 120px; line-height: 1; color: var(--accent); font-weight: 900; }
+.insight-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent-soft); margin-bottom: 14px; margin-left: 60px; }
+.insight-text { font-family: 'Fraunces', serif; font-weight: 400; font-size: 26px; line-height: 1.4; margin-left: 60px; max-width: 50ch; }
+
+/* ── INTERACTIVE STREET MODEL ── */
+.slider-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--rule);
+  background: var(--paper-warm);
+}
+.slider-item {
+  padding: 20px 24px;
+  border-right: 1px solid var(--rule);
+}
+.slider-item:last-child { border-right: 0; }
+.slider-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-muted); margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.slider-val {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 28px; line-height: 1; letter-spacing: -0.02em;
+}
+.slider-val span { font-size: 14px; color: var(--ink-muted); font-weight: 400; }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--rule); outline: none; margin-top: 10px; cursor: pointer;
+  border-radius: 2px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ink); cursor: pointer; border: 2px solid var(--paper-warm);
+  transition: background 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover { background: var(--accent); }
+input[type=range]#ev-slider::-webkit-slider-thumb { background: var(--ev); }
+input[type=range]#hp-slider::-webkit-slider-thumb { background: var(--hp); }
+input[type=range]#solar-slider::-webkit-slider-thumb { background: var(--battery); }
+
+.load-meter {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 24px; background: var(--ink); color: var(--paper);
+  margin-bottom: 24px;
+}
+.load-meter-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent-soft);
+  margin-bottom: 4px;
+}
+.load-meter-value {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 36px; line-height: 1; letter-spacing: -0.02em;
+}
+.load-meter-value span { font-size: 14px; color: var(--accent-soft); margin-left: 4px; }
+.load-bar-wrap {
+  flex: 1; background: rgba(255,255,255,0.1); height: 12px; border-radius: 2px; overflow: hidden;
+}
+.load-bar {
+  height: 100%; background: var(--battery); transition: width 0.4s ease, background 0.4s ease;
+  border-radius: 2px;
+}
+.load-status {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 4px 10px; border-radius: 2px; white-space: nowrap;
+  font-weight: 500;
+}
+.load-status.ok { background: rgba(107,142,78,0.25); color: #8ec46a; }
+.load-status.warn { background: rgba(232,176,75,0.25); color: #e8b04b; }
+.load-status.over { background: rgba(196,69,28,0.25); color: var(--accent-soft); }
+#chart-tooltip { position: fixed; background: var(--ink); color: var(--paper); padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 999; border: 1px solid var(--accent); box-shadow: 3px 3px 0 var(--accent); max-width: 240px; }
+#chart-tooltip.visible { opacity: 1; }
+
+/* ── FOOTER ── */
+.footer { margin-top: 96px; padding-top: 24px; border-top: 2px solid var(--ink); display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+.footer-text { font-size: 12px; color: var(--ink-muted); max-width: 60ch; line-height: 1.55; }
+.footer-text strong { color: var(--ink); }
+.footer-text a { color: var(--accent); text-decoration: none; }
+.footer-text a:hover { text-decoration: underline; }
+.byline { font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); text-align: right; }
+.byline strong { font-style: normal; font-weight: 700; color: var(--ink); display: block; font-size: 16px; }
+
+/* ── SCROLL ANIMATIONS ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+.reveal-children > * { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.reveal-children.visible > *:nth-child(1) { transition-delay:0s;    opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(2) { transition-delay:0.12s; opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(3) { transition-delay:0.24s; opacity:1; transform:none; }
+.reveal-children.visible > *:nth-child(4) { transition-delay:0.36s; opacity:1; transform:none; }
+.reveal-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal-left.visible { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .container { padding: 24px 18px 60px; }
+  .stats-strip { grid-template-columns: repeat(2,1fr); }
+  .stat { border-right: 0; border-bottom: 1px solid var(--rule); padding: 20px 16px; }
+  .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0; }
+  .live-strip { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .live-strip-divider { display: none; }
+  .insight { padding: 28px 24px; }
+  .insight-text { margin-left: 0; font-size: 20px; }
+  .insight-label { margin-left: 0; }
+  .insight::before { left: 16px; font-size: 80px; }
+
+  /* Sliders — stack vertically, bigger touch targets */
+  .slider-panel { grid-template-columns: 1fr; }
+  /* Fig 03 intro — stack on mobile */
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  .slider-item { border-right: 0; border-bottom: 1px solid var(--rule); padding: 18px 20px; }
+  .slider-item:last-child { border-bottom: 0; }
+  .slider-val { font-size: 22px; }
+  input[type=range] { height: 6px; margin-top: 14px; }
+  input[type=range]::-webkit-slider-thumb { width: 28px; height: 28px; }
+
+  /* Load meter — wrap cleanly */
+  .load-meter { flex-wrap: wrap; gap: 12px; }
+  .load-bar-wrap { width: 100%; flex: none; order: 3; }
+  .load-status { order: 2; }
+
+  /* Toggles */
+  .lct-legend { gap: 8px; }
+  .lct-toggle { font-size: 9px; padding: 6px 10px; }
+}
+</style>
+</head>
+<script>
+const LCT_DATA={years:[2019,2020,2021,2022,2023,2024,2025],series:[{id:'ev',label:'New EVs registered',color:'var(--ev)',values:[38,109,190,267,315,382,430]},{id:'hp',label:'Heat pumps installed',color:'var(--hp)',values:[11,11,25,33,44,49,52]},{id:'solar',label:'Solar PV installations',color:'var(--solar)',values:[45,55,90,120,135,165,195]},{id:'battery',label:'Home battery storage',color:'var(--battery)',values:[8,12,22,38,55,78,105]}]};
+const SOURCE_LABELS={gas:'Gas',nuclear:'Nuclear',wind:'Wind',solar:'Solar',hydro:'Hydro',imports:'Imports',biomass:'Biomass',coal:'Coal',other:'Other'};
+const SOURCE_COLORS={gas:'#c4451c',nuclear:'#7d5a8c',wind:'#4a7a8c',solar:'#e8b04b',hydro:'#5a8a9c',imports:'#8a7a6a',biomass:'#6b8e4e',coal:'#3d3d3d',other:'#a0a0a0'};
+const LOW_CARBON=new Set(['nuclear','wind','solar','hydro','biomass']);
+const CAPACITY=500,BASE_LOAD=120,N_HOMES=40,EV_PER_HOME=4.8,HP_PER_HOME=2.2,SOLAR_OFFSET=-1.65;
+
+async function fetchLiveData(){
+  try{
+    const[iRes,mRes]=await Promise.all([fetch('https://api.carbonintensity.org.uk/intensity'),fetch('https://api.carbonintensity.org.uk/generation')]);
+    const[iData,mData]=await Promise.all([iRes.json(),mRes.json()]);
+    const intensity=iData.data[0].intensity;
+    const actual=intensity.actual??intensity.forecast??'--';
+    const index=intensity.index??'--';
+    const gen=mData.data.generationmix;
+    const sorted=[...gen].sort((a,b)=>b.perc-a.perc);
+    const top=sorted[0];
+    const lcPct=gen.filter(g=>LOW_CARBON.has(g.fuel)).reduce((s,g)=>s+g.perc,0);
+    document.getElementById('live-intensity').innerHTML=`${actual}<span class="live-strip-unit">gCO₂/kWh</span>`;
+    document.getElementById('live-intensity-detail').textContent='Half-hourly national average';
+    document.getElementById('live-index').textContent=index.charAt(0).toUpperCase()+index.slice(1);
+    document.getElementById('live-top-source').textContent=SOURCE_LABELS[top.fuel]||top.fuel;
+    document.getElementById('live-top-pct').textContent=`${top.perc.toFixed(1)}% of current mix`;
+    document.getElementById('live-lowcarbon').textContent=`${lcPct.toFixed(0)}%`;
+    const meta=document.getElementById('meta-stamp');
+    meta.classList.remove('loading');
+    meta.textContent=`№ 07 · Low-carbon connections · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+    drawMixChart(gen);
+    return true;
+  }catch(e){
+    console.warn('Live fetch failed:',e);
+    document.getElementById('meta-stamp').classList.remove('loading');
+    document.getElementById('meta-stamp').textContent='№ 07 · Low-carbon connections';
+    document.getElementById('live-intensity-detail').textContent='Live data unavailable';
+    return false;
+  }
+}
+
+function drawLCTChart(){
+  const offIds=new Set([...document.querySelectorAll('.lct-toggle.off')].map(b=>b.dataset.id));
+  const visible=LCT_DATA.series.filter(s=>!offIds.has(s.id));
+  const svg=d3.select('#lct-growth');
+  const W=1100,H=420,margin={top:30,right:120,bottom:50,left:70};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleLinear().domain([2019,2025]).range([0,w]);
+  const yMax=d3.max(LCT_DATA.series,s=>d3.max(s.values))/1000;
+  const y=d3.scaleLinear().domain([0,yMax*1.1]).range([h,0]);
+  const tooltip=d3.select('#chart-tooltip');
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(6));
+  const line=d3.line().x((_,i)=>x(LCT_DATA.years[i])).y(d=>y(d/1000)).curve(d3.curveMonotoneX);
+  visible.forEach(s=>{
+    const path=g.append('path').datum(s.values).attr('fill','none').attr('stroke',s.color).attr('stroke-width',2.5).attr('stroke-linejoin','round').attr('d',line);
+    const len=path.node().getTotalLength();
+    path.attr('stroke-dasharray',`${len} ${len}`).attr('stroke-dashoffset',len).transition().duration(1200).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
+    g.selectAll(`.dot-${s.id}`).data(s.values).join('circle').attr('cx',(_,i)=>x(LCT_DATA.years[i])).attr('cy',d=>y(d/1000)).attr('r',4).attr('fill',s.color).attr('stroke','var(--paper-warm)').attr('stroke-width',2).style('cursor','pointer')
+      .on('mouseenter',function(event,d){d3.select(this).attr('r',6);const i=s.values.indexOf(d);tooltip.classed('visible',true).html(`<strong style="color:${s.color}">${s.label}</strong><br>${LCT_DATA.years[i]}: <strong>${(d/1000).toFixed(0)}k</strong>`);})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px');})
+      .on('mouseleave',function(){d3.select(this).attr('r',4);tooltip.classed('visible',false);});
+    const lv=s.values[s.values.length-1];
+    g.append('text').attr('x',x(2025)+10).attr('y',y(lv/1000)+4).style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('fill',s.color).style('font-weight','500').text(`${(lv/1000).toFixed(0)}k`);
+  });
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(7).tickFormat(d=>d));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(6).tickFormat(d=>`${d}k`));
+  g.append('text').attr('x',0).attr('y',-10).style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('text-transform','uppercase').style('letter-spacing','0.12em').style('fill','var(--ink-muted)').text('Annual UK installations / registrations (thousands)');
+  const legend=document.getElementById('lct-legend');
+  if(!legend.children.length){
+    LCT_DATA.series.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='lct-toggle';btn.dataset.id=s.id;
+      btn.innerHTML=`<span class="swatch" style="background:${s.color}"></span>${s.label}`;
+      btn.addEventListener('click',()=>{btn.classList.toggle('off');drawLCTChart();});
+      legend.appendChild(btn);
+    });
+  }
+}
+
+function drawMixChart(gen){
+  const svg=d3.select('#mix-chart');
+  const W=1100,H=320,margin={top:30,right:30,bottom:50,left:70};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const sorted=[...gen].sort((a,b)=>b.perc-a.perc);
+  const x=d3.scaleBand().domain(sorted.map(d=>d.fuel)).range([0,w]).padding(0.22);
+  const y=d3.scaleLinear().domain([0,d3.max(sorted,d=>d.perc)*1.15]).range([h,0]);
+  const tooltip=d3.select('#chart-tooltip');
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+  g.selectAll('.bar').data(sorted).join('rect').attr('x',d=>x(d.fuel)).attr('y',h).attr('width',x.bandwidth()).attr('height',0).attr('fill',d=>SOURCE_COLORS[d.fuel]||'#aaa').attr('opacity',d=>LOW_CARBON.has(d.fuel)?0.9:0.55).style('cursor','pointer')
+    .on('mouseenter',function(event,d){d3.select(this).attr('opacity',1);tooltip.classed('visible',true).html(`<strong>${SOURCE_LABELS[d.fuel]||d.fuel}</strong><br>Current share: <strong>${d.perc.toFixed(1)}%</strong><br>${LOW_CARBON.has(d.fuel)?'&#10003; Low-carbon':'&#9888; Fossil / import'}`);})
+    .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px');})
+    .on('mouseleave',function(event,d){d3.select(this).attr('opacity',LOW_CARBON.has(d.fuel)?0.9:0.55);tooltip.classed('visible',false);})
+    .transition().duration(700).ease(d3.easeCubicOut).delay((_,i)=>i*60).attr('y',d=>y(d.perc)).attr('height',d=>h-y(d.perc));
+  g.selectAll('.lbl').data(sorted).join('text').attr('x',d=>x(d.fuel)+x.bandwidth()/2).attr('y',d=>y(d.perc)-8).attr('text-anchor','middle').style('font-family','Fraunces, serif').style('font-size','15px').style('font-weight','500').style('fill','var(--ink)').text(d=>d.perc>2?`${d.perc.toFixed(1)}%`:'');
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).tickFormat(d=>SOURCE_LABELS[d]||d));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}%`));
+  g.append('text').attr('x',0).attr('y',-10).style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('text-transform','uppercase').style('letter-spacing','0.12em').style('fill','var(--ink-muted)').text('Current generation mix — live half-hourly data (%)');
+}
+
+function updateLoadMeter(evPct,hpPct,solarPct){
+  const load=BASE_LOAD+(evPct/100)*N_HOMES*EV_PER_HOME+(hpPct/100)*N_HOMES*HP_PER_HOME+(solarPct/100)*N_HOMES*SOLAR_OFFSET;
+  document.getElementById('load-value').innerHTML=`${Math.round(load)}<span>kVA</span>`;
+  const bar=document.getElementById('load-bar');
+  const status=document.getElementById('load-status');
+  const explainer=document.getElementById('load-explainer');
+  bar.style.width=`${Math.min((load/CAPACITY)*100,100)}%`;
+  if(load<CAPACITY*0.75){
+    bar.style.background='#6b8e4e';
+    status.className='load-status ok';
+    status.textContent='Within limits';
+    explainer.className='load-explainer';
+    explainer.textContent='At the current settings, the substation is operating comfortably within its rated capacity. Drag the EV and heat pump sliders right to see how quickly demand can build.';
+  } else if(load<CAPACITY){
+    bar.style.background='#e8b04b';
+    status.className='load-status warn';
+    status.textContent='Approaching limit';
+    explainer.className='load-explainer warn';
+    explainer.textContent=`At ${Math.round(load)} kVA, this street is approaching the substation\'s rated limit of 500 kVA. In practice, a DNO would need to upgrade the transformer before allowing further connections — a process that can take months and cost thousands of pounds.`;
+  } else {
+    bar.style.background='#c4451c';
+    status.className='load-status over';
+    status.textContent=`Over capacity (+${Math.round(load-CAPACITY)} kVA)`;
+    explainer.className='load-explainer over';
+    explainer.textContent=`At ${Math.round(load)} kVA, this street has exceeded the substation\'s rated capacity by ${Math.round(load-CAPACITY)} kVA. New connection applications would be refused or delayed until the network is reinforced. This is the queue that most households with EVs and heat pumps actually face.`;
+  }
+}
+
+function drawStreetChart(evPct,hpPct,solarPct){
+  evPct=evPct??+document.getElementById('ev-slider').value;
+  hpPct=hpPct??+document.getElementById('hp-slider').value;
+  solarPct=solarPct??+document.getElementById('solar-slider').value;
+  const svg=d3.select('#street-chart');
+  const W=1100,H=380,margin={top:40,right:110,bottom:60,left:80};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  const xPts=[0,10,20,30,40,50,60,70,80,90,100];
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const xScale=d3.scaleLinear().domain([0,100]).range([0,w]);
+  const y=d3.scaleLinear().domain([0,CAPACITY*1.15]).range([h,0]);
+  const tooltip=d3.select('#chart-tooltip');
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(6));
+  g.append('line').attr('x1',0).attr('x2',w).attr('y1',y(CAPACITY)).attr('y2',y(CAPACITY)).attr('stroke','var(--accent)').attr('stroke-width',2).attr('stroke-dasharray','6,3');
+  g.append('text').attr('x',w+6).attr('y',y(CAPACITY)+4).style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('fill','var(--accent)').style('font-weight','500').text('500 kVA limit');
+  const sd=xPts.map(p=>{const f=p/100;return{x:p,base:Math.max(0,BASE_LOAD+f*N_HOMES*SOLAR_OFFSET*(solarPct/100)),ev:f*N_HOMES*EV_PER_HOME*(evPct/100),hp:f*N_HOMES*HP_PER_HOME*(hpPct/100)};});
+  const colors={base:'#4a7a8c',ev:'#7d5a8c',hp:'#c4451c'};
+  const layers=d3.stack().keys(['base','ev','hp'])(sd);
+  const area=d3.area().x(d=>xScale(d.data.x)).y0(d=>y(d[0])).y1(d=>y(d[1])).curve(d3.curveMonotoneX);
+  layers.forEach(layer=>g.append('path').datum(layer).attr('fill',colors[layer.key]).attr('opacity',0.65).attr('d',area));
+  const totals=xPts.map(p=>{const f=p/100;return BASE_LOAD+f*N_HOMES*EV_PER_HOME*(evPct/100)+f*N_HOMES*HP_PER_HOME*(hpPct/100)+f*N_HOMES*SOLAR_OFFSET*(solarPct/100);});
+  const lPath=g.append('path').datum(totals).attr('fill','none').attr('stroke','var(--ink)').attr('stroke-width',2.5).attr('d',d3.line().x((_,i)=>xScale(xPts[i])).y(d=>y(d)).curve(d3.curveMonotoneX));
+  const len=lPath.node().getTotalLength();
+  lPath.attr('stroke-dasharray',`${len} ${len}`).attr('stroke-dashoffset',len).transition().duration(500).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
+  g.selectAll('.dt').data(totals).join('circle').attr('cx',(_,i)=>xScale(xPts[i])).attr('cy',d=>y(d)).attr('r',4).attr('fill','var(--ink)').attr('stroke','var(--paper-warm)').attr('stroke-width',2).style('cursor','pointer')
+    .on('mouseenter',function(event,d){const i=totals.indexOf(d);tooltip.classed('visible',true).html(`<strong>${xPts[i]}% of homes electrified</strong><br>Total load: <strong>${Math.round(d)} kVA</strong><br>${d>=CAPACITY?'<span style="color:#e8a48a">⚠ Over limit</span>':d>=CAPACITY*0.75?'⚠ Approaching limit':'✓ Within capacity'}`);})
+    .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px');})
+    .on('mouseleave',function(){tooltip.classed('visible',false);});
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`).call(d3.axisBottom(xScale).tickFormat(d=>`${d}%`).ticks(10));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(6).tickFormat(d=>`${d}`));
+  g.append('text').attr('x',0).attr('y',-10).style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('text-transform','uppercase').style('letter-spacing','0.12em').style('fill','var(--ink-muted)').text('LV substation load (kVA) — drag sliders to update');
+  [['#4a7a8c','Base load'],['#7d5a8c','EV load'],['#c4451c','Heat pump load'],['var(--ink)','Total',true]].forEach(([c,l,line],i)=>{
+    const lx=i*220,ly=h+40;
+    if(line)g.append('line').attr('x1',lx).attr('x2',lx+16).attr('y1',ly+7).attr('y2',ly+7).attr('stroke',c).attr('stroke-width',2.5);
+    else g.append('rect').attr('x',lx).attr('y',ly).attr('width',14).attr('height',14).attr('fill',c).attr('opacity',0.65);
+    g.append('text').attr('x',lx+20).attr('y',ly+10).style('font-family','Inter Tight, sans-serif').style('font-size','12px').style('fill','var(--ink-soft)').text(l);
+  });
+  updateLoadMeter(evPct,hpPct,solarPct);
+}
+
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    el.textContent=target>=100?Math.round(v):v.toFixed(1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:0.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const val=parseFloat(node.textContent.trim());
+      if(!isNaN(val))countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:0.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+
+const chartsDrawn={lct:false,street:false};
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg')?.id;
+    if(id==='lct-growth'&&!chartsDrawn.lct){chartsDrawn.lct=true;drawLCTChart();hideLoaders();}
+    if(id==='street-chart'&&!chartsDrawn.street){chartsDrawn.street=true;drawStreetChart(0,0,0);hideLoaders();}
+    chartObs.unobserve(e.target);
+  });
+},{threshold:0.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+
+function onSliderChange(){
+  const ev=+document.getElementById('ev-slider').value;
+  const hp=+document.getElementById('hp-slider').value;
+  const solar=+document.getElementById('solar-slider').value;
+  document.getElementById('ev-val').innerHTML=`${ev}<span>%</span>`;
+  document.getElementById('hp-val').innerHTML=`${hp}<span>%</span>`;
+  document.getElementById('solar-val').innerHTML=`${solar}<span>%</span>`;
+  updateLoadMeter(ev,hp,solar);
+  if(chartsDrawn.street)drawStreetChart(ev,hp,solar);
+}
+['ev-slider','hp-slider','solar-slider'].forEach(id=>document.getElementById(id).addEventListener('input',onSliderChange));
+
+fetchLiveData().then(ok=>{if(ok)hideLoaders();});
+window.addEventListener('resize',()=>{
+  if(chartsDrawn.lct)drawLCTChart();
+  if(chartsDrawn.street)drawStreetChart(+document.getElementById('ev-slider').value,+document.getElementById('hp-slider').value,+document.getElementById('solar-slider').value);
+});
+</script>
+
+</body>
+</html>
