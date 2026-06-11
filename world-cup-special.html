@@ -346,6 +346,17 @@ svg{display:block;width:100%;height:auto;overflow:visible}
     </div>
   </div>
 
+  <div class="callout" style="border-left-color:var(--c3)">
+    <div class="callout-label">The operator's view, June 2026</div>
+    <div class="callout-text" style="font-family:'Fraunces',serif;font-size:19px;line-height:1.55;font-style:italic">
+      Watching this tournament will “almost certainly be powered by the cleanest electricity in history.”
+    </div>
+    <div class="callout-text" style="margin-top:10px">
+      — Craig Dyke, Director of System Operations, NESO. With more matches than any previous World Cup, NESO expects pickup surges across a longer stretch of the summer than ever — met, this time, by a grid running 40–50% renewable during the matches, with batteries and Dinorwig standing by. In 1994, the half-time kettles ran mostly on coal.
+    </div>
+  </div>
+
+
   <!-- FIGURE 02: RESPONSE RACE -->
   <div class="section reveal">
     <div class="section-label">Figure 02</div>
@@ -451,7 +462,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
     <div class="footer-text">
       <strong>TV pickup data.</strong> All-time record (2.8 GW, 1990) and kettle equivalents from National Grid/NESO historical data. 800 MW World Cup 2026 forecast from
       <a href="https://www.business-standard.com" target="_blank">Business Standard / NESO, June 2026</a>.
-      Quote from Craig Dyke, Director of System Operations, NESO. Dinorwig capacity and response time from NESO/First Hydro.
+      Craig Dyke quote and tournament forecasts from NESO’s June 2026 announcement (as reported by E&amp;T, PA and others); renewables share estimate 40–50% per NESO. Dinorwig capacity and response time from NESO/First Hydro.
       <strong>Octopus "Watt a Save".</strong> Initiative details from
       <a href="https://octopus.energy/businesses/watt-a-save/" target="_blank">Octopus Energy for Business</a>, launched June 2026. £4.6m customer savings and £5.8m Saving Sessions rewards from Octopus/GB News, 2026.
       <strong>Response times.</strong> Based on published technical data for each generation type; actual times vary by unit and operating state.
@@ -723,6 +734,20 @@ const chartObs=new IntersectionObserver(entries=>{
 },{threshold:.15});
 document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
 
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
 window.addEventListener('resize',()=>{if(chartsDrawn.flex)drawFlexChart();});
 </script>
 </body>
