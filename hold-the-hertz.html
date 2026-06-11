@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hold the Hertz — Control Room Game</title>
+<title>Hold the Hertz — Control Room Panic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter+Tight:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -49,6 +49,7 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 
 /* ---------- layout ---------- */
 .game{display:grid;grid-template-columns:1fr 290px;grid-template-areas:"dial tickets" "assets assets";gap:12px}
+.game>*{min-width:0;max-width:100%}  /* grid items default to min-width:auto, which lets wide content blow out the page */
 #dialPanel{grid-area:dial}
 #ticketPanel{grid-area:tickets}
 .assets{grid-area:assets;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -742,7 +743,7 @@ function endGame(survived){
     $('tipsBtn').classList.add('hidden');
   }
   let grade;
-  if(!survived) grade = '⚫ Lights out — get focused and try again';
+  if(!survived) grade = '⚫ Lights out — see you at the inquiry';
   else if(pct>=92 && S.peakDev<=0.25) grade='🏆 System Operator of the Year';
   else if(pct>=80) grade='🟢 Seasoned control engineer';
   else if(pct>=60) grade='🟡 Probationary dispatcher';
