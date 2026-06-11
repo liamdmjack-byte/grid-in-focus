@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The heat pump maths — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  .hp-sliders{grid-template-columns:1fr !important}.hp-results{grid-template-columns:1fr !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 15 · The heat pump maths · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">The heat pump maths, done <em>honestly.</em></h1>
+  <p class="standfirst reveal">No appliance generates more arguments. So here are actual numbers: your bills, real-world efficiency data, and the one ratio the whole debate comes down to — including the awkward truth that the ratio is a policy choice.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Heat from 1 unit of electricity</div>
+      <div class="stat-value">~3<span class="unit">x</span></div>
+      <div class="stat-detail">Real-world heat pump efficiency</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Electricity vs gas price</div>
+      <div class="stat-value">~4<span class="unit">x</span></div>
+      <div class="stat-detail">Per unit — the ratio that decides everything</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Government grant</div>
+      <div class="stat-value">£7,500</div>
+      <div class="stat-detail">Boiler Upgrade Scheme, England &amp; Wales</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The break-even rule</div>
+      <div class="stat-value">COP &gt; ratio</div>
+      <div class="stat-detail">Efficiency must beat the price gap</div>
+    </div>
+  </div>
+
+
+  <!-- FIG 01: THE CALCULATOR -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">The honest calculator</h2>
+    <p class="section-blurb">
+      Two sliders: your current annual gas heating bill, and how efficiently a heat pump would run in your home (the COP — how many units of heat per unit of electricity). The verdict updates live, using real unit prices. No brochure optimism in either direction.
+    </p>
+    <div class="dark-panel">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px" class="hp-sliders">
+        <div>
+          <div class="dark-label">Your annual gas heating bill</div>
+          <div class="dark-big">£<span id="gas-val">900</span><span>per year</span></div>
+          <input type="range" class="gif-range" id="gas-slider" min="400" max="2500" step="50" value="900">
+          <div class="range-ends"><span>£400</span><span>Typical: ~£900</span><span>£2,500</span></div>
+        </div>
+        <div>
+          <div class="dark-label">Heat pump efficiency (COP)</div>
+          <div class="dark-big"><span id="cop-val">2.8</span><span>units heat per unit electricity</span></div>
+          <input type="range" class="gif-range" id="cop-slider" min="2.0" max="4.5" step="0.1" value="2.8">
+          <div class="range-ends"><span>Poor install: 2.0</span><span>Field-trial avg: 2.8</span><span>Excellent: 4.5</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-frame" style="border-top:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="hp-results">
+        <div style="padding:24px;background:var(--paper);border:1px solid var(--rule);border-top:4px solid #a09880">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:8px">Gas boiler (now)</div>
+          <div style="font-family:'Fraunces',serif;font-size:44px;font-weight:500;letter-spacing:-.02em">£<span id="res-gas">900</span><span style="font-size:16px;color:var(--ink-muted)">/yr</span></div>
+        </div>
+        <div style="padding:24px;background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--c3)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:8px">Heat pump (same warmth)</div>
+          <div style="font-family:'Fraunces',serif;font-size:44px;font-weight:500;letter-spacing:-.02em">£<span id="res-hp">--</span><span style="font-size:16px;color:var(--ink-muted)">/yr</span></div>
+        </div>
+      </div>
+      <div id="hp-verdict" style="margin-top:16px;padding:16px 20px;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--accent);font-size:14px;color:var(--ink-soft);line-height:1.65"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The whole argument in one sentence</div>
+    <div class="insight-text">
+      A heat pump gives you roughly three units of heat per unit of electricity. Electricity costs roughly four times more than gas per unit. The entire national heat pump debate is the gap between those two numbers — and that gap is a policy choice, not physics.
+    </div>
+  </div>
+
+  <!-- FIG 02: THE RATIO PROBLEM -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">Why the same heat pump pays in Oslo and struggles in Oldham</h2>
+    <p class="section-blurb">
+      The electricity-to-gas price ratio varies wildly between countries — mostly because of where each chooses to load its policy costs. Britain stacks them on electricity. Where the bar sits below a heat pump's efficiency, going electric saves money automatically.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">Eurostat / IEA energy price comparisons</div>
+      </div>
+      <svg id="ratio-chart" viewBox="0 0 1100 320"></svg>
+    </div>
+    <div class="callout">
+      <div class="callout-label">The quiet decision that would change everything</div>
+      <div class="callout-text">
+        Most green levies and social policy costs sit on electricity bills, not gas — a legacy of when electricity was the dirty fuel. Moving them to gas or general taxation would cut the ratio toward 3:1 and make heat pumps clearly cheaper to run for most homes overnight. It has been reviewed, debated and deferred for years. It remains the single biggest lever nobody has pulled.
+      </div>
+    </div>
+  </div>
+
+  <!-- FIG 03: LAB VS FIELD -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Brochure numbers vs real homes</h2>
+    <p class="section-blurb">
+      One ruler, four dots: where heat pump efficiency actually lands, from a poor install to the brochure — set against the red line where the UK price ratio makes it break even. The honest news: installs have been improving, and a well-designed system in an ordinary house now reliably clears the field-trial average.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">Energy Systems Catapult field trials</div>
+      </div>
+      <svg id="cop-chart" viewBox="0 0 1100 300"></svg>
+    </div>
+  </div>
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Prices.</strong> Unit rates approximate the Ofgem price cap (~27p/kWh electricity, ~6.3p/kWh gas); the calculator assumes 85% boiler efficiency and identical heat delivered. <strong>COP data.</strong> Field performance ranges from Energy Systems Catapult electrification-of-heat trials and subsequent monitoring; “brochure” figure is a typical rated SCOP under test conditions. <strong>Country ratios.</strong> Indicative household electricity:gas price ratios from Eurostat/IEA comparisons — they move with markets and tax decisions. <strong>Grant.</strong> Boiler Upgrade Scheme, England &amp; Wales.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+const ELEC_P=27.0, GAS_P=6.3; // p/kWh approx cap rates
+function updateHP(){
+  const gasBill=+document.getElementById('gas-slider').value;
+  const cop=+document.getElementById('cop-slider').value;
+  document.getElementById('gas-val').textContent=gasBill.toLocaleString();
+  document.getElementById('cop-val').textContent=cop.toFixed(1);
+  // heat needed (kWh) = gas spend / gas price * boiler efficiency (~0.85)
+  const heatKwh=(gasBill*100/GAS_P)*0.85;
+  const hpCost=Math.round((heatKwh/cop)*ELEC_P/100);
+  document.getElementById('res-gas').textContent=gasBill.toLocaleString();
+  document.getElementById('res-hp').textContent=hpCost.toLocaleString();
+  const diff=gasBill-hpCost;
+  const ratio=(ELEC_P/GAS_P).toFixed(1);
+  const v=document.getElementById('hp-verdict');
+  if(diff>50){
+    v.innerHTML=`<strong style="color:var(--c3)">The heat pump wins by \u00a3${diff.toLocaleString()} a year.</strong> At a COP of ${cop.toFixed(1)}, the efficiency beats the ${ratio}:1 price ratio with room to spare. Add a heat-pump-specific tariff (cheap overnight rates) and the gap widens further.`;
+  } else if(diff>-50){
+    v.innerHTML=`<strong style="color:var(--warn)">It is a wash \u2014 within \u00a350 either way.</strong> At COP ${cop.toFixed(1)} against a ${ratio}:1 price ratio, running costs are roughly level. The decision then rests on the \u00a37,500 grant, your boiler's age, and carbon \u2014 a heat pump cuts heating emissions by ~70% immediately.`;
+  } else {
+    v.innerHTML=`<strong style="color:var(--accent)">The gas boiler is cheaper to run by \u00a3${Math.abs(diff).toLocaleString()} a year at these settings.</strong> A COP of ${cop.toFixed(1)} cannot beat a ${ratio}:1 price ratio. This is the honest case where the maths does not work yet \u2014 and why the policy-cost question in Figure 02 matters more than any technology improvement.`;
+  }
+}
+document.getElementById('gas-slider').addEventListener('input',updateHP);
+document.getElementById('cop-slider').addEventListener('input',updateHP);
+updateHP();
+
+function drawRatioChart(){
+  const data=[
+    {c:'Norway',r:1.4},{c:'Sweden',r:1.9},{c:'France',r:2.4},
+    {c:'Netherlands',r:2.9},{c:'Germany',r:3.2},{c:'UK',r:4.2,uk:true},
+  ];
+  const svg=d3.select('#ratio-chart');
+  const W=1100,H=320,margin={top:50,right:60,bottom:50,left:120};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleLinear().domain([1,5]).range([0,w]);
+  const y=d3.scaleBand().domain(data.map(d=>d.c)).range([0,h]).padding(.45);
+  const tooltip=d3.select('#chart-tooltip');
+  // winning zone
+  g.append('rect').attr('x',x(1)).attr('width',x(2.8)-x(1)).attr('y',-8).attr('height',h+16)
+    .attr('fill','var(--c3)').attr('opacity',.10);
+  g.append('line').attr('x1',x(2.8)).attr('x2',x(2.8)).attr('y1',-8).attr('y2',h+8)
+    .attr('stroke','var(--c3)').attr('stroke-width',2).attr('stroke-dasharray','5,4');
+  g.append('text').attr('x',x(2.8)-8).attr('y',-16).attr('text-anchor','end')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px').style('fill','var(--c3)')
+    .text('← inside this zone a typical heat pump (COP 2.8) wins automatically');
+  data.forEach((d,i)=>{
+    g.append('line').attr('x1',x(1)).attr('x2',x(1)).attr('y1',y(d.c)+y.bandwidth()/2).attr('y2',y(d.c)+y.bandwidth()/2)
+      .attr('stroke',d.uk?'var(--accent)':'var(--ink-muted)').attr('stroke-width',d.uk?3:2).attr('opacity',d.uk?.9:.5)
+      .transition().duration(700).delay(i*90).attr('x2',x(d.r));
+    g.append('circle').attr('cx',x(1)).attr('cy',y(d.c)+y.bandwidth()/2).attr('r',d.uk?9:7)
+      .attr('fill',d.uk?'var(--accent)':'var(--c1)')
+      .style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html(`<strong>${d.c}</strong><br>Electricity costs ${d.r}x gas per unit${d.r<2.8?'<br>Heat pumps clearly cheaper to run':''}`)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)})
+      .transition().duration(700).delay(i*90).attr('cx',x(d.r));
+    g.append('text').attr('x',-14).attr('y',y(d.c)+y.bandwidth()/2+4).attr('text-anchor','end')
+      .style('font-family','Inter Tight, sans-serif').style('font-size','13px').style('font-weight',d.uk?'600':'500')
+      .style('fill',d.uk?'var(--accent)':'var(--ink)').text(d.c);
+    g.append('text').attr('x',x(d.r)).attr('y',y(d.c)+y.bandwidth()/2-14).attr('text-anchor','middle')
+      .style('font-family','Fraunces, serif').style('font-size','14px').style('font-weight','600')
+      .style('fill',d.uk?'var(--accent)':'var(--ink-muted)').style('opacity',0)
+      .text(d.r+':1')
+      .transition().delay(i*90+700).duration(250).style('opacity',1);
+  });
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`)
+    .call(d3.axisBottom(x).tickValues([1,2,3,4,5]).tickFormat(d=>d+':1'));
+  g.append('text').attr('x',w/2).attr('y',h+38).attr('text-anchor','middle')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-muted)')
+    .text('Household electricity price as a multiple of gas price');
+}
+function drawCopChart(){
+  const data=[
+    {name:'Poor install',cop:2.1,color:'var(--c5)',note:'undersized radiators, bad design'},
+    {name:'Field-trial average',cop:2.8,color:'var(--c1)',note:'real homes, real winters',key:true},
+    {name:'Excellent install',cop:3.6,color:'var(--c3)',note:'well-designed system, ordinary house'},
+    {name:'Brochure (lab)',cop:4.5,color:'#a09880',note:'test conditions, mild day'},
+  ];
+  const svg=d3.select('#cop-chart');
+  const W=1100,H=300,margin={top:70,right:60,bottom:60,left:60};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleLinear().domain([1.5,5]).range([0,w]);
+  const midY=h/2;
+  const tooltip=d3.select('#chart-tooltip');
+  // single axis line
+  g.append('line').attr('x1',0).attr('x2',w).attr('y1',midY).attr('y2',midY).attr('stroke','var(--rule)').attr('stroke-width',2);
+  // UK ratio marker = break-even
+  g.append('line').attr('x1',x(4.2)).attr('x2',x(4.2)).attr('y1',midY-46).attr('y2',midY+46)
+    .attr('stroke','var(--accent)').attr('stroke-width',2).attr('stroke-dasharray','5,4');
+  g.append('text').attr('x',x(4.2)).attr('y',midY+66).attr('text-anchor','middle')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--accent)')
+    .text('UK price ratio 4.2 — break-even point');
+  g.append('text').attr('x',x(4.2)-10).attr('y',midY-58).attr('text-anchor','end')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-muted)')
+    .text('← left of the line: gas boiler cheaper to run · right: heat pump cheaper →');
+  data.forEach((d,i)=>{
+    const above=i%2===0;
+    g.append('circle').attr('cx',x(d.cop)).attr('cy',midY).attr('r',0)
+      .attr('fill',d.color).attr('stroke','var(--paper-warm)').attr('stroke-width',2)
+      .style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html(`<strong>${d.name}</strong><br>COP ${d.cop} — ${d.note}`)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)})
+      .transition().duration(400).delay(i*180).attr('r',d.key?12:9);
+    g.append('text').attr('x',x(d.cop)).attr('y',above?midY-26:midY+36).attr('text-anchor','middle')
+      .style('font-family','Inter Tight, sans-serif').style('font-size','12px').style('font-weight',d.key?'600':'500').style('fill','var(--ink)')
+      .style('opacity',0).text(`${d.name} · ${d.cop}`)
+      .transition().delay(i*180+250).duration(300).style('opacity',1);
+  });
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h+6})`)
+    .call(d3.axisBottom(x).tickValues([2,2.5,3,3.5,4,4.5,5]));
+  g.append('text').attr('x',0).attr('y',-46)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+    .text('Real-world efficiency on one ruler — where does an install land against the price ratio?');
+}
+window.CHART_DRAWERS={
+  'ratio-chart':{fn:drawRatioChart,done:false},
+  'cop-chart':{fn:drawCopChart,done:false},
+};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

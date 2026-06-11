@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Britain's electricity has a pulse — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 11 · The grid's heartbeat · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">Britain’s electricity has a <em>pulse.</em></h1>
+  <p class="standfirst reveal">Fifty beats a second, every device in the country locked in step. This is the story of the number the grid defends above all others — and the Friday afternoon in 2019 when lightning, two power stations and 77 seconds showed everyone why.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">The heartbeat</div>
+      <div class="stat-value">50<span class="unit">Hz</span></div>
+      <div class="stat-detail">Every device, locked in step</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Normal operating band</div>
+      <div class="stat-value">±0.2<span class="unit">Hz</span></div>
+      <div class="stat-detail">NESO steers it constantly</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">9 August 2019</div>
+      <div class="stat-value">48.8<span class="unit">Hz</span></div>
+      <div class="stat-detail">The dip that stopped the trains</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Customers cut that evening</div>
+      <div class="stat-value">1.1<span class="unit">m</span></div>
+      <div class="stat-detail">Automatically, in milliseconds</div>
+    </div>
+  </div>
+
+
+  <!-- FIG 01: LIVE TRACE -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">The trace — now trip a power station</h2>
+    <p class="section-blurb">
+      This is a live simulation of the grid's pulse: 50 cycles a second, wandering gently as supply and demand breathe. Press the button to suddenly lose a 1 GW power station and watch the frequency fall — then watch batteries, pumped hydro and spinning reserve catch it. Or replay the real thing.
+    </p>
+    <div class="dark-panel" style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap">
+      <div>
+        <div class="dark-label">System frequency</div>
+        <div class="dark-big" style="font-family:'JetBrains Mono',monospace;font-weight:500" id="freq-readout">50.00<span> Hz</span></div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button id="trip-btn" class="gif-btn" style="background:var(--accent);color:var(--paper);border:0;padding:14px 22px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer">Trip a 1 GW station</button>
+        <button id="replay-btn" class="gif-btn" style="background:rgba(255,255,255,.08);color:var(--paper);border:1px solid rgba(255,255,255,.2);padding:14px 22px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer">Replay 9 Aug 2019</button>
+      </div>
+    </div>
+    <div class="chart-frame" style="border-top:0">
+      <svg id="trace-chart" viewBox="0 0 1100 340"></svg>
+      <div id="trace-verdict" style="margin-top:14px;padding:14px 18px;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--accent);font-size:14px;color:var(--ink-soft);line-height:1.6">
+        The grid is healthy. Frequency sits in the green band because, at this exact moment, generation and demand are balanced to within fractions of a percent — and they have to be, every second, forever.
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The synchronised machine</div>
+    <div class="insight-text">
+      Every generator from Cornwall to Caithness spins in lockstep, fifty times a second — one nationwide machine with millions of moving parts. Your kettle is synchronised with every other kettle in Britain. Frequency is the machine's pulse: when it drops, somewhere, supply has just failed to meet demand.
+    </div>
+  </div>
+
+  <!-- FIG 02: 9 AUGUST 2019 -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">Anatomy of a blackout — 9 August 2019, minute by minute</h2>
+    <p class="section-blurb">
+      A Friday teatime in summer. Lightning hits a transmission line in Hertfordshire — routine, handled in milliseconds. But two large generators react badly and trip within seconds of each other. What follows is the grid's immune system working exactly as designed, and a country discovering what 48.8 Hz feels like.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Reconstructing the trace</div>
+        <div class="chart-loader-source">NESO 9 August 2019 technical report</div>
+      </div>
+      <svg id="blackout-chart" viewBox="0 0 1100 420"></svg>
+    </div>
+    <div class="callout">
+      <div class="callout-label">Why the trains made it worse</div>
+      <div class="callout-text">
+        The power cut lasted under an hour. The chaos lasted all day — because around 60 trains shut themselves down when frequency dipped, and half of them needed a technician to physically visit and reboot them. The grid recovered in 45 minutes; the railway didn't. The lasting lesson of 2019 was less about generation and more about everything plugged into it.
+      </div>
+    </div>
+  </div>
+
+  <!-- FIG 03: WHO CATCHES IT -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Who catches a falling grid</h2>
+    <p class="section-blurb">
+      Defence in depth, ranked by speed. The deep change underway: the old grid's steadiness came free, from the sheer spinning mass of coal and gas turbines. As they retire, that inertia leaves with them — and batteries are being paid to replace physics with electronics.
+    </p>
+    <div class="cards-3 reveal-children" style="grid-template-columns:repeat(2,1fr)">
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">Inertia — instant, automatic</div>
+        <div class="gif-card-type">The spinning mass</div>
+        <div class="gif-card-body">Hundreds of tonnes of steel spinning at 3,000 rpm in every conventional power station resist any change in speed — pure physics, no control system needed. It does not stop a fall; it slows one, buying seconds for everything else. Wind and solar contribute almost none, which is why a renewables grid needs the rest of this list more than ever.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">Batteries — under a second</div>
+        <div class="gif-card-type">The new reflexes</div>
+        <div class="gif-card-body">Grid batteries watch the frequency and inject full power in a few hundred milliseconds — faster than anything in grid history. Services with names like Dynamic Containment barely existed in 2019; they are now the front line, and a major reason the fleet from Post 13 earns money even when it isn't trading energy.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c2)">
+        <div class="gif-card-name">Dinorwig — twelve seconds</div>
+        <div class="gif-card-type">The mountain, again</div>
+        <div class="gif-card-body">The Electric Mountain from the World Cup Special: 0 to 1,320 MW in around 12 seconds, on standby with turbines spinning in air for exactly these moments. Pumped hydro is the heavyweight responder — slower than batteries, but with vastly more behind it.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c5)">
+        <div class="gif-card-name">Load shedding — the last resort</div>
+        <div class="gif-card-type">What happened in 2019</div>
+        <div class="gif-card-body">If frequency ever reaches 48.8 Hz, relays in substations across the country automatically disconnect blocks of demand — no human in the loop, no choosing who. Brutal, indiscriminate, and the reason a bad afternoon in 2019 did not become a national blackout. It has triggered exactly once in modern memory.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>9 August 2019.</strong> Timings, frequency values and customer numbers from the NESO (then National Grid ESO) technical report and Ofgem/E3C investigations into the event; the frequency curve is a simplified reconstruction of the published trace. <strong>Live trace.</strong> A simulation for illustration — realistic bands and response behaviour, not live grid data. <strong>Response services.</strong> NESO Dynamic Containment and reserve service descriptions; Dinorwig response time per First Hydro. The grid operates 49.8–50.2 Hz in normal conditions; statutory limits are wider.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+/* ── live frequency trace ── */
+const TRACE={pts:[],max:280,f:50.0,mode:'normal',t:0,event:null};
+const TW=1100,TH=340,TM={top:30,right:70,bottom:30,left:18};
+const tw=TW-TM.left-TM.right,th=TH-TM.top-TM.bottom;
+const fy=d3.scaleLinear().domain([48.5,50.6]).range([th,0]);
+let traceG=null;
+function initTrace(){
+  const svg=d3.select('#trace-chart');
+  svg.selectAll('*').remove();
+  traceG=svg.append('g').attr('transform',`translate(${TM.left},${TM.top})`);
+  // bands
+  const bands=[
+    {y1:50.2,y2:49.8,c:'var(--c3)',o:.10,label:'Normal band'},
+    {y1:49.8,y2:49.5,c:'var(--c4)',o:.12,label:'Alarms \u00b7 reserves dispatched'},
+    {y1:49.5,y2:48.8,c:'var(--c5)',o:.10,label:'Serious \u00b7 every responder in'},
+    {y1:48.8,y2:48.5,c:'var(--ink)',o:.15,label:'48.8 Hz \u00b7 automatic load shedding'},
+  ];
+  bands.forEach(b=>{
+    traceG.append('rect').attr('x',0).attr('width',tw).attr('y',fy(b.y1)).attr('height',fy(b.y2)-fy(b.y1)).attr('fill',b.c).attr('opacity',b.o);
+    traceG.append('text').attr('x',tw+6).attr('y',fy((b.y1+b.y2)/2)+3)
+      .style('font-family','JetBrains Mono, monospace').style('font-size','8.5px').style('fill','var(--ink-muted)')
+      .text(b.label.split(' \u00b7 ')[0]);
+  });
+  [50.2,49.8,49.5,48.8].forEach(v=>{
+    traceG.append('line').attr('x1',0).attr('x2',tw).attr('y1',fy(v)).attr('y2',fy(v))
+      .attr('stroke','var(--rule)').attr('stroke-width',1).attr('stroke-dasharray','2,3');
+    traceG.append('text').attr('x',2).attr('y',fy(v)-3)
+      .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-muted)').text(v.toFixed(1));
+  });
+  traceG.append('path').attr('id','trace-path').attr('fill','none').attr('stroke','var(--ink)').attr('stroke-width',2);
+  traceG.append('circle').attr('id','trace-dot').attr('r',4).attr('fill','var(--accent)');
+}
+function eventEnvelope(t,depth,fall,recover){
+  if(t<0)return 0;
+  if(t<fall)return -depth*(t/fall);
+  return -depth*Math.exp(-(t-fall)/recover);
+}
+let lastVerdict='normal';
+function stepTrace(){
+  TRACE.t+=0.12;
+  let f=50+ (Math.sin(TRACE.t*0.7)*0.03)+(Math.sin(TRACE.t*0.23+2)*0.04)+(Math.random()-0.5)*0.02;
+  if(TRACE.event){
+    const et=TRACE.t-TRACE.event.t0;
+    f+=eventEnvelope(et,TRACE.event.depth,TRACE.event.fall,TRACE.event.recover);
+    if(et>TRACE.event.fall+TRACE.event.recover*4){TRACE.event=null;setVerdict('normal');}
+    else if(f<=48.85&&TRACE.event.depth>1){setVerdict('lfdd');}
+    else if(f<49.5){setVerdict('serious');}
+    else if(f<49.8){setVerdict('response');}
+  }
+  TRACE.f=f;
+  TRACE.pts.push(f);
+  if(TRACE.pts.length>TRACE.max)TRACE.pts.shift();
+  const x=d3.scaleLinear().domain([0,TRACE.max-1]).range([0,tw]);
+  const line=d3.line().x((d,i)=>x(i)).y(d=>fy(d)).curve(d3.curveBasis);
+  d3.select('#trace-path').attr('d',line(TRACE.pts));
+  d3.select('#trace-dot').attr('cx',x(TRACE.pts.length-1)).attr('cy',fy(f));
+  const ro=document.getElementById('freq-readout');
+  ro.childNodes[0].textContent=f.toFixed(2);
+  ro.style.color=f<48.85?'var(--accent)':(f<49.8?'var(--accent-soft)':'var(--paper)');
+}
+function setVerdict(k){
+  if(k===lastVerdict)return;lastVerdict=k;
+  const v=document.getElementById('trace-verdict');
+  const map={
+    normal:'The grid is healthy. Frequency sits in the green band because, at this exact moment, generation and demand are balanced to within fractions of a percent \u2014 and they have to be, every second, forever.',
+    response:'<strong>Generation just vanished and the frequency is falling.</strong> Inertia is slowing the fall; batteries answered within half a second; Dinorwig is spinning up. Nobody has pressed anything \u2014 this is all automatic.',
+    serious:'<strong style="color:var(--accent)">Below 49.5 Hz \u2014 serious territory.</strong> Every contracted responder is now delivering. In the control room this is a very loud minute. The next line down is the one with no humans in it.',
+    lfdd:'<strong style="color:var(--accent)">48.8 Hz \u2014 automatic load shedding has triggered.</strong> Relays across the country have disconnected ~5% of national demand without asking anyone. This is what happened at 16:53 on 9 August 2019. Watch the recovery \u2014 sacrificing the few keeps the lights on for the many.',
+  };
+  v.innerHTML=map[k];
+}
+document.getElementById('trip-btn').addEventListener('click',()=>{
+  TRACE.event={t0:TRACE.t,depth:0.55,fall:5,recover:9};setVerdict('response');
+});
+document.getElementById('replay-btn').addEventListener('click',()=>{
+  TRACE.event={t0:TRACE.t,depth:1.25,fall:7,recover:14};setVerdict('response');
+});
+initTrace();
+for(let i=0;i<TRACE.max;i++)stepTrace();
+setInterval(stepTrace,70);
+window.addEventListener('resize',()=>{});
+
+/* ── 9 Aug 2019 reconstruction ── */
+function drawBlackout(){
+  // time in seconds from 16:52:00
+  const f=[ [0,50.0],[33,50.0],[34,49.9],[45,49.6],[58,49.1],[75,49.2],[90,49.0],[105,48.9],[109,48.8],[112,48.9],[130,49.2],[180,49.5],[300,49.9],[480,50.0],[840,50.0] ];
+  const events=[
+    {t:33,f:50.0,label:'16:52:33 \u2014 Lightning strikes the Eaton Socon\u2013Wymondley line',side:1},
+    {t:40,f:49.75,label:'Seconds later \u2014 Hornsea One offshore wind deloads ~740 MW',side:1},
+    {t:50,f:49.45,label:'Little Barford gas station trips in stages',side:-1},
+    {t:109,f:48.8,label:'16:53:49 \u2014 48.8 Hz: load shedding disconnects ~1.1m customers',side:-1},
+    {t:300,f:49.9,label:'By 17:06 \u2014 frequency restored to 50 Hz',side:1},
+    {t:760,f:50.0,label:'17:37 \u2014 all demand reconnected. The railway: hours more',side:-1},
+  ];
+  const svg=d3.select('#blackout-chart');
+  const W=1100,H=420,margin={top:56,right:30,bottom:46,left:52};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleLinear().domain([0,840]).range([0,w]);
+  const y=d3.scaleLinear().domain([48.5,50.3]).range([h,0]);
+  // bands
+  g.append('rect').attr('x',0).attr('width',w).attr('y',y(50.2)).attr('height',y(49.8)-y(50.2)).attr('fill','var(--c3)').attr('opacity',.08);
+  g.append('rect').attr('x',0).attr('width',w).attr('y',y(48.8)).attr('height',y(48.5)-y(48.8)).attr('fill','var(--c5)').attr('opacity',.10);
+  g.append('line').attr('x1',0).attr('x2',w).attr('y1',y(48.8)).attr('y2',y(48.8)).attr('stroke','var(--accent)').attr('stroke-width',1.5).attr('stroke-dasharray','4,4');
+  g.append('text').attr('x',w).attr('y',y(48.8)+14).attr('text-anchor','end')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--accent)')
+    .text('48.8 Hz \u2014 automatic load shedding threshold');
+  const line=d3.line().x(d=>x(d[0])).y(d=>y(d[1])).curve(d3.curveMonotoneX);
+  const p=g.append('path').datum(f).attr('fill','none').attr('stroke','var(--ink)').attr('stroke-width',2.5).attr('d',line);
+  const pl=p.node().getTotalLength();
+  p.attr('stroke-dasharray',`${pl} ${pl}`).attr('stroke-dashoffset',pl)
+    .transition().duration(1600).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
+  const tooltip=d3.select('#chart-tooltip');
+  events.forEach((e,i)=>{
+    g.append('circle').attr('cx',x(e.t)).attr('cy',y(e.f)).attr('r',5).attr('fill','var(--accent)').attr('stroke','var(--paper-warm)').attr('stroke-width',2)
+      .style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html(e.label)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)});
+    const ly=e.side>0? y(e.f)-26-(i%2)*16 : y(e.f)+30+(i%2)*16;
+    g.append('line').attr('x1',x(e.t)).attr('x2',x(e.t)).attr('y1',y(e.f)+(e.side>0?-6:6)).attr('y2',ly+(e.side>0?4:-10)).attr('stroke','var(--ink-muted)').attr('stroke-width',1).attr('opacity',.5);
+    g.append('text').attr('x',Math.min(Math.max(x(e.t),4),w-4)).attr('y',ly)
+      .attr('text-anchor',x(e.t)>w*0.75?'end':(x(e.t)<w*0.12?'start':'middle'))
+      .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-soft)')
+      .text(e.label.length>52?e.label.slice(0,52)+'\u2026':e.label);
+  });
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`)
+    .call(d3.axisBottom(x).tickValues([0,120,300,540,840]).tickFormat(d=>{
+      const mm=Math.floor(d/60),base=52+mm;return '16:'+String(base).padStart(2,'0').replace('16:60','17:00');
+    }));
+  // fix tick labels >59
+  g.selectAll('.axis text').each(function(){
+    const t=d3.select(this);const v=t.text();
+    if(v==='16:60')t.text('17:00');if(v==='16:61')t.text('17:01');if(v==='16:66')t.text('17:06');
+  });
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).tickValues([48.8,49.0,49.5,50.0]).tickFormat(d=>d.toFixed(1)+' Hz'));
+  g.append('text').attr('x',0).attr('y',-34)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+    .text('System frequency, 16:52\u201317:06, Friday 9 August 2019 \u2014 hover the dots');
+}
+window.CHART_DRAWERS={'blackout-chart':{fn:drawBlackout,done:false}};
+setTimeout(hideLoaders,600);
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

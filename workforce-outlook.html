@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The people problem — The Grid in Focus #10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --r1:#4a7a8c; --r2:#7d5a8c; --r3:#6b8e4e; --r4:#e8b04b; --r5:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 20% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 80% 70%,rgba(107,142,78,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'←';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(40px,6vw,72px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:20ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:22px;line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 24px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:24px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-muted);margin-bottom:12px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:38px;line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:16px;color:var(--ink-muted);font-weight:400;margin-left:4px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:32px;line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:44px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--r1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--r2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--r3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--r4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--r5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+
+/* ── ROLE SELECTOR ── */
+.role-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:24px;border:1px solid var(--rule);overflow:hidden}
+.role-btn{padding:16px 12px;background:var(--paper-warm);border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center}
+.role-btn:last-child{border-right:0}
+.role-btn:hover{background:var(--paper)}
+.role-btn.active{background:var(--ink);color:var(--paper)}
+.role-btn-icon{font-size:24px;margin-bottom:6px}
+.role-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.role-btn.active .role-btn-label{color:var(--accent-soft)}
+
+.role-detail{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule);overflow:hidden;background:var(--paper-warm);border-top:0}
+.role-detail-left{padding:28px 32px;border-right:1px solid var(--rule)}
+.role-detail-right{padding:28px 32px}
+.role-detail-title{font-family:'Fraunces',serif;font-weight:500;font-size:26px;margin-bottom:4px}
+.role-detail-subtitle{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:20px}
+.role-detail-body{font-size:14px;color:var(--ink-soft);line-height:1.6}
+
+.role-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.role-stat{background:var(--paper);padding:16px 18px;border:1px solid var(--rule)}
+.role-stat-val{font-family:'Fraunces',serif;font-weight:500;font-size:32px;line-height:1;letter-spacing:-.02em;margin-bottom:4px}
+.role-stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted)}
+
+/* Training bar */
+.training-bar-wrap{margin-top:20px}
+.training-bar-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:8px;display:flex;justify-content:space-between}
+.training-track{height:12px;background:var(--rule);border-radius:2px;overflow:hidden;position:relative}
+.training-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.training-markers{display:flex;justify-content:space-between;margin-top:4px}
+.training-marker{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-muted)}
+
+/* ── SUPPLY GAP SLIDER ── */
+.gap-controls{background:var(--ink);color:var(--paper);padding:28px 32px;margin-bottom:0;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+.gap-ctrl-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.gap-ctrl-val{font-family:'Fraunces',serif;font-size:40px;font-weight:500;line-height:1;letter-spacing:-.02em;margin-bottom:8px}
+.gap-ctrl-val span{font-size:16px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gap-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px}
+input[type=range].gap-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+.gap-result{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.gap-result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.gap-result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.gap-result-val.ok{color:#8ec46a}
+.gap-result-val.warn{color:#e8b04b}
+.gap-result-val.over{color:var(--accent-soft)}
+.gap-result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:6px;line-height:1.5}
+
+/* CALLOUT */
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+
+/* INSIGHT */
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+
+/* FOOTER */
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+
+/* SCROLL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:20px 16px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .role-grid{grid-template-columns:repeat(3,1fr);flex-wrap:wrap}
+  .role-detail{grid-template-columns:1fr}
+  .role-detail-left{border-right:0;border-bottom:1px solid var(--rule)}
+  .gap-controls{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 10 · Workforce &amp; supply chain · 2025</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">Britain needs 400,000 energy workers. It doesn't <em>have them</em>.</h1>
+  <p class="standfirst reveal">
+    The money for the Great Grid Upgrade is approved. The technology exists.
+    But you cannot build a pylon without the people to build it — and right now,
+    Britain doesn't have nearly enough of them. The bottleneck isn't pylons or planning.
+    It's electricians.
+  </p>
+
+  <!-- STATS -->
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">New energy roles needed by 2030</div>
+      <div class="stat-value">400<span class="unit">k</span></div>
+      <div class="stat-detail">Doubling the current workforce</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Workers say staffing is too low</div>
+      <div class="stat-value">82<span class="unit">%</span></div>
+      <div class="stat-detail">Prospect union survey, 2024</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Youth apprenticeship starts</div>
+      <div class="stat-value">-35<span class="unit">%</span></div>
+      <div class="stat-detail">Decline over the last decade</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Retiring for every new entrant</div>
+      <div class="stat-value">2.4<span class="unit">x</span></div>
+      <div class="stat-detail">Workers near retirement vs under-25s (IEA)</div>
+    </div>
+  </div>
+
+  <!-- FIGURE 01: ROLE TRAINING SELECTOR -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">The roles that need filling — and how long they take to train</h2>
+    <p class="section-blurb">
+      More than half the 400,000 roles needed are equivalent to A-levels or below.
+      This is not a shortage of PhDs. It is a shortage of electricians, line workers
+      and civil engineers — people who take years to train and whose skills are being
+      competed for globally. Click each role to see the training pathway and the scale of the need.
+    </p>
+
+    <div class="role-grid" id="role-grid">
+      <div class="role-btn active" data-role="0">
+        <div class="role-btn-icon">⚡</div>
+        <div class="role-btn-label">Electrician</div>
+      </div>
+      <div class="role-btn" data-role="1">
+        <div class="role-btn-icon">🔌</div>
+        <div class="role-btn-label">HV Engineer</div>
+      </div>
+      <div class="role-btn" data-role="2">
+        <div class="role-btn-icon">🏗</div>
+        <div class="role-btn-label">Civil Engineer</div>
+      </div>
+      <div class="role-btn" data-role="3">
+        <div class="role-btn-icon">📋</div>
+        <div class="role-btn-label">Project Manager</div>
+      </div>
+      <div class="role-btn" data-role="4">
+        <div class="role-btn-icon">🔧</div>
+        <div class="role-btn-label">Substation Tech</div>
+      </div>
+    </div>
+
+    <div class="role-detail" id="role-detail">
+      <div class="role-detail-left">
+        <div class="role-detail-title" id="rd-title">Electrician</div>
+        <div class="role-detail-subtitle" id="rd-subtitle">Level 3 · Apprenticeship route</div>
+        <div class="role-detail-body" id="rd-body">The most acute shortage in the sector. Electricians are the foundation of every grid upgrade — wiring substations, connecting cables, commissioning new equipment. Training takes four years through an apprenticeship. Britain needs tens of thousands more by 2030. The problem: apprenticeship starts among young people have fallen 35% over the last decade.</div>
+        <div class="training-bar-wrap">
+          <div class="training-bar-label">
+            <span>Training pathway</span>
+            <span id="rd-years">4 years</span>
+          </div>
+          <div class="training-track">
+            <div class="training-fill" id="rd-bar" style="width:40%;background:var(--r1)"></div>
+          </div>
+          <div class="training-markers">
+            <span class="training-marker">Start</span>
+            <span class="training-marker">2 yrs</span>
+            <span class="training-marker">4 yrs</span>
+            <span class="training-marker">6 yrs</span>
+            <span class="training-marker">8 yrs</span>
+            <span class="training-marker">10 yrs</span>
+          </div>
+        </div>
+      </div>
+      <div class="role-detail-right">
+        <div class="role-stats">
+          <div class="role-stat">
+            <div class="role-stat-val" id="rd-needed" style="color:var(--r1)">~80k</div>
+            <div class="role-stat-label">New roles needed by 2030</div>
+          </div>
+          <div class="role-stat">
+            <div class="role-stat-val" id="rd-train">4 yrs</div>
+            <div class="role-stat-label">Minimum training time</div>
+          </div>
+          <div class="role-stat" style="grid-column:span 2">
+            <div class="role-stat-val" id="rd-level" style="font-size:18px;line-height:1.4">Level 3 — equivalent to A-levels</div>
+            <div class="role-stat-label">Qualification level required</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:14px 16px;background:rgba(196,69,28,.06);border-left:2px solid var(--accent)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px">The global problem</div>
+          <div id="rd-global" style="font-size:13px;color:var(--ink-soft);line-height:1.55">Germany, Denmark, France, the US and Australia are all running the same upgrade programmes simultaneously. Every country is fishing in the same pool of experienced engineers.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The uncomfortable maths</div>
+    <div class="insight-text">
+      A high-voltage engineer takes up to 7 years to train from scratch.
+      Britain needs thousands of them by 2030.
+      We should have started training them in 2023.
+    </div>
+  </div>
+
+  <!-- FIGURE 02: SUPPLY GAP CHART + SLIDER -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Interactive</div>
+    <h2 class="section-title">How big is the gap — and can training fix it in time?</h2>
+    <p class="section-blurb">
+      Britain currently trains around 22,400 new energy sector recruits per year. The target
+      requires roughly 57,000 per year to hit 400,000 new roles by 2030. Use the slider
+      to see what different training rates would actually deliver by 2030.
+    </p>
+
+    <div class="gap-controls">
+      <div>
+        <div class="gap-ctrl-label">Annual new recruits into energy sector</div>
+        <div class="gap-ctrl-val">
+          <span id="gap-rate-val">22,400</span><span>per year</span>
+        </div>
+        <input type="range" class="gap-range" id="gap-slider" min="10000" max="80000" step="1000" value="22400">
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)">
+          <span>10k/yr</span><span>Current: 22.4k</span><span>Target: 57k</span><span>80k/yr</span>
+        </div>
+      </div>
+      <div class="gap-result">
+        <div class="gap-result-label">New workers by 2030 (5 years)</div>
+        <div class="gap-result-val" id="gap-result-val">112,000</div>
+        <div class="gap-result-sub" id="gap-result-sub">288,000 short of the 400,000 target. Clean Power 2030 is at serious risk.</div>
+      </div>
+    </div>
+
+    <div class="chart-frame" style="border-top:0">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">Energy &amp; Utility Skills · National Grid · IEA</div>
+      </div>
+      <svg id="gap-chart" viewBox="0 0 1100 340"></svg>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Why you can't just train faster</div>
+      <div class="callout-text">
+        High-voltage engineering and substation work require supervised on-the-job experience
+        that cannot be compressed. A course can teach theory in months. Competence —
+        the kind trusted to work on live 400kV equipment — takes years of supervised practice.
+        The only way to solve this by 2030 is to have started in 2022.
+      </div>
+    </div>
+  </div>
+
+  <!-- FIGURE 03: SUPPLY CHAIN CHART -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">It is not just people — the equipment queue is just as long</h2>
+    <p class="section-blurb">
+      The workforce shortage is matched by a global equipment shortage. High-voltage transformers,
+      subsea cable and switchgear are all in short supply worldwide. Britain is not the only country
+      placing orders.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Building chart</div>
+        <div class="chart-loader-source">CIGRE · IEA · National Grid supply chain analysis 2024</div>
+      </div>
+      <svg id="supply-chart" viewBox="0 0 1100 300"></svg>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">
+      <strong>Workforce figures.</strong> 400,000 new roles by 2030 from HM Government Clean Power Mission workforce estimates (Energy UK, December 2025). 22,400 new recruits per year from Energy &amp; Utility Skills analysis. 82% staffing dissatisfaction from Prospect union workforce survey (2024). Youth apprenticeship decline from DfE Apprenticeship Statistics 2024/25. 2.4x retirement ratio from IEA World Energy Employment 2025 report.
+      <strong>Training timelines.</strong> Based on industry standard apprenticeship and degree pathways; actual durations vary by employer and route.
+      <strong>Supply chain.</strong> Transformer and cable lead times from National Grid RIIO-T3 Business Plan supply chain annex (December 2024) and IEA Building the Future Transmission Grid (2025).
+    </div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+
+<div id="chart-tooltip"></div>
+
+<script>
+/* ── ROLE DATA ── */
+const ROLES = [
+  {
+    title:'Electrician', subtitle:'Level 3 · Apprenticeship route', color:'var(--r1)',
+    trainYrs:4, needed:'~80,000', level:'Level 3 — equivalent to A-levels', pct:40,
+    body:'The most acute shortage in the sector. Electricians are the foundation of every grid upgrade — wiring substations, connecting cables, commissioning equipment. Training takes four years. Britain needs tens of thousands more by 2030. The problem: apprenticeship starts among young people have fallen 35% over the last decade.',
+    global:'Germany, Denmark, France and the US are all running the same upgrade programmes. Every country is fishing in the same pool — and the pool is not growing fast enough.'
+  },
+  {
+    title:'High-Voltage Engineer', subtitle:'Level 6-7 · Degree + 3-4 yrs supervised practice', color:'var(--r2)',
+    trainYrs:7, needed:'~30,000', level:'Level 6-7 — degree level + experience', pct:70,
+    body:'High-voltage engineers design, commission and maintain the transmission network. They work on live 400kV equipment where mistakes are fatal. A degree takes three to four years. Competence recognised by industry takes another three to four years of supervised experience. Total: up to seven or eight years.',
+    global:'HV engineering is the single most competed-for specialism globally. A qualified HV engineer in Britain can earn more in Norway, Australia or the US. Retention is as big a problem as recruitment.'
+  },
+  {
+    title:'Civil Engineer', subtitle:'Level 6 · Degree apprenticeship or graduate route', color:'var(--r3)',
+    trainYrs:5, needed:'~40,000', level:'Level 6 — degree level', pct:50,
+    body:'Every pylon needs foundations. Every substation needs a building. Every cable needs a trench. Civil engineers manage the physical construction of grid infrastructure — earthworks, access roads, drainage, structural work. Demand from grid projects competes directly with housebuilding, roads and HS2.',
+    global:'Civil engineering skills are contested across every major infrastructure programme simultaneously. Grid projects compete not just with other countries but with every domestic construction programme running at the same time.'
+  },
+  {
+    title:'Project Manager', subtitle:'Level 5-7 · APM or degree route', color:'var(--r4)',
+    trainYrs:4, needed:'~25,000', level:'Level 5-7 — HND to degree level', pct:40,
+    body:'Managing a major transmission project means coordinating hundreds of contractors, navigating planning conditions, managing supply chains with lead times measured in years, and delivering to a fixed regulatory timeline. Experienced energy project managers are extraordinarily scarce — most have been hired away by offshore wind or data centre programmes.',
+    global:'Project management talent is the most portable skill in construction. An experienced energy PM can move to data centres, offshore wind or overseas projects with minimal retraining. Retention is a constant challenge.'
+  },
+  {
+    title:'Substation Technician', subtitle:'Level 3-4 · Apprenticeship or HNC', color:'var(--r5)',
+    trainYrs:5, needed:'~35,000', level:'Level 3-4 — A-level to HNC equivalent', pct:50,
+    body:'Substation technicians install, test and maintain the transformers, switchgear and protection systems at the heart of the grid. The Great Grid Upgrade involves building or upgrading dozens of substations across England and Wales. Each one requires a team of qualified technicians — and the current workforce cannot cover the build rate required.',
+    global:'Substation expertise sits at the intersection of electrical and mechanical engineering. Training takes five years. The specialism is narrow enough that competition between projects — not just countries — drives up day rates significantly.'
+  }
+];
+
+function selectRole(i) {
+  document.querySelectorAll('.role-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+  const r = ROLES[i];
+  document.getElementById('rd-title').textContent    = r.title;
+  document.getElementById('rd-subtitle').textContent = r.subtitle;
+  document.getElementById('rd-body').textContent     = r.body;
+  document.getElementById('rd-global').textContent   = r.global;
+  document.getElementById('rd-years').textContent    = `${r.trainYrs} years`;
+  document.getElementById('rd-needed').textContent   = r.needed;
+  document.getElementById('rd-needed').style.color   = r.color;
+  document.getElementById('rd-train').textContent    = `${r.trainYrs} yrs`;
+  document.getElementById('rd-level').textContent    = r.level;
+  const bar = document.getElementById('rd-bar');
+  bar.style.background = r.color;
+  bar.style.width = '0%';
+  setTimeout(() => { bar.style.transition='width .6s ease'; bar.style.width = r.pct+'%'; }, 50);
+}
+
+document.querySelectorAll('.role-btn').forEach((btn,i) => {
+  btn.addEventListener('click', () => selectRole(i));
+});
+
+/* ── SUPPLY GAP INTERACTIVE ── */
+const TARGET = 400000;
+const YEARS = 5; // to 2030
+
+function updateGap() {
+  const rate = +document.getElementById('gap-slider').value;
+  const total = rate * YEARS;
+  const gap = TARGET - total;
+  const pct = Math.round((total / TARGET) * 100);
+
+  document.getElementById('gap-rate-val').textContent = rate.toLocaleString();
+  document.getElementById('gap-result-val').textContent = total.toLocaleString();
+
+  const valEl = document.getElementById('gap-result-val');
+  const subEl = document.getElementById('gap-result-sub');
+
+  if (total >= TARGET) {
+    valEl.className = 'gap-result-val ok';
+    subEl.textContent = `Meets the 400,000 target. This would require more than doubling current training rates immediately — and sustaining it for 5 years.`;
+  } else if (total >= TARGET * 0.75) {
+    valEl.className = 'gap-result-val warn';
+    subEl.textContent = `${gap.toLocaleString()} short of the 400,000 target. Significant shortfall — some projects would be delayed but the core grid upgrade could proceed.`;
+  } else {
+    valEl.className = 'gap-result-val over';
+    subEl.textContent = `${gap.toLocaleString()} short of the 400,000 target. Clean Power 2030 is at serious risk. At this rate, the workforce constraint becomes the binding bottleneck.`;
+  }
+
+  if (window.gapChartDrawn) drawGapChart(rate);
+}
+document.getElementById('gap-slider').addEventListener('input', updateGap);
+window.gapChartDrawn = false;
+
+/* ── FIGURE 02: GAP CHART ── */
+function drawGapChart(annualRate) {
+  annualRate = annualRate ?? +document.getElementById('gap-slider').value;
+  const svg = d3.select('#gap-chart');
+  const W=1100, H=340, margin={top:40,right:60,bottom:60,left:100};
+  const w=W-margin.left-margin.right, h=H-margin.top-margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  const years = [2025,2026,2027,2028,2029,2030];
+  const cumTarget = years.map((_,i) => TARGET * ((i+1)/years.length));
+  const cumActual = years.map((_,i) => annualRate * (i+1));
+
+  const x = d3.scalePoint().domain(years).range([0,w]);
+  const y = d3.scaleLinear().domain([0, TARGET * 1.1]).range([h,0]);
+  const tooltip = d3.select('#chart-tooltip');
+
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+
+  // Target area
+  const areaFn = d3.area()
+    .x((_,i)=>x(years[i])).y0(h).y1(d=>y(d))
+    .curve(d3.curveMonotoneX);
+  g.append('path').datum(cumTarget)
+    .attr('fill','var(--r3)').attr('opacity',.12).attr('d',areaFn);
+
+  // Target line
+  const lineFn = d3.line().x((_,i)=>x(years[i])).y(d=>y(d)).curve(d3.curveMonotoneX);
+  g.append('path').datum(cumTarget)
+    .attr('fill','none').attr('stroke','var(--r3)').attr('stroke-width',2)
+    .attr('stroke-dasharray','6,3').attr('d',lineFn);
+  g.append('text')
+    .attr('x',x(2030)+8).attr('y',y(TARGET)+4)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('fill','var(--r3)').style('font-weight','500').text('Target: 400k');
+
+  // Actual line
+  const actualPath = g.append('path').datum(cumActual)
+    .attr('fill','none').attr('stroke',cumActual[5]>=TARGET?'var(--r3)':'var(--accent)')
+    .attr('stroke-width',3).attr('d',lineFn);
+  const len = actualPath.node().getTotalLength();
+  actualPath.attr('stroke-dasharray',`${len} ${len}`).attr('stroke-dashoffset',len)
+    .transition().duration(700).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
+
+  // Actual area
+  g.append('path').datum(cumActual)
+    .attr('fill',cumActual[5]>=TARGET?'var(--r3)':'var(--accent)').attr('opacity',.18)
+    .attr('d',areaFn);
+
+  // Dots
+  g.selectAll('.dot').data(cumActual).join('circle')
+    .attr('cx',(_,i)=>x(years[i])).attr('cy',d=>y(d))
+    .attr('r',5).attr('fill',cumActual[5]>=TARGET?'var(--r3)':'var(--accent)')
+    .attr('stroke','var(--paper-warm)').attr('stroke-width',2).style('cursor','pointer')
+    .on('mouseenter',function(event,d) {
+      const i=cumActual.indexOf(d);
+      const gap=TARGET-d;
+      tooltip.classed('visible',true).html(
+        `<strong>${years[i]}</strong><br>Cumulative: <strong>${Math.round(d).toLocaleString()}</strong><br>
+         ${gap>0?`Gap: ${Math.round(gap).toLocaleString()} short`:'Target met'}`
+      );
+    })
+    .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+    .on('mouseleave',function(){tooltip.classed('visible',false)});
+
+  // Gap shading between lines if below target
+  if (cumActual[5] < TARGET) {
+    const gapArea = d3.area()
+      .x((_,i)=>x(years[i])).y0(d=>y(d)).y1((_,i)=>y(cumTarget[i]))
+      .curve(d3.curveMonotoneX);
+    g.append('path').datum(cumActual)
+      .attr('fill','var(--accent)').attr('opacity',.06).attr('d',gapArea);
+  }
+
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).tickFormat(d=>d));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${(d/1000).toFixed(0)}k`));
+  g.append('text').attr('x',0).attr('y',-12)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+    .text('Cumulative new energy sector workers — drag slider above to update');
+}
+
+/* ── FIGURE 03: SUPPLY CHAIN LEAD TIMES ── */
+function drawSupplyChart() {
+  const items = [
+    { item:'HV Power Transformer',  lead:36, critical:true  },
+    { item:'Subsea HVDC Cable',     lead:30, critical:true  },
+    { item:'Gas-Insulated Switchgear', lead:24, critical:true  },
+    { item:'Tower Steel',           lead:12, critical:false },
+    { item:'XLPE Insulated Cable',  lead:18, critical:true  },
+    { item:'Reactive Compensation', lead:24, critical:true  },
+    { item:'Protection Relays',     lead:10, critical:false },
+    { item:'Foundation Concrete',   lead:4,  critical:false },
+  ].sort((a,b)=>b.lead-a.lead);
+
+  const svg = d3.select('#supply-chart');
+  const W=1100, H=300, margin={top:30,right:60,bottom:50,left:220};
+  const w=W-margin.left-margin.right, h=H-margin.top-margin.bottom;
+
+  svg.selectAll('*').remove();
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear().domain([0,42]).range([0,w]);
+  const y = d3.scaleBand().domain(items.map(d=>d.item)).range([0,h]).padding(0.22);
+  const tooltip = d3.select('#chart-tooltip');
+
+  g.append('g').attr('class','grid')
+    .call(d3.axisBottom(x).tickSize(h).tickFormat('').ticks(6))
+    .attr('transform','translate(0,0)');
+
+  // 12-month "danger zone" marker
+  g.append('rect').attr('x',x(12)).attr('y',0).attr('width',x(42)-x(12)).attr('height',h)
+    .attr('fill','var(--accent)').attr('opacity',.04);
+  g.append('text').attr('x',x(12)+4).attr('y',-6)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px')
+    .style('fill','var(--accent)').style('opacity','.7')
+    .text('Over 12 months — risks missing 2030 window if not already ordered');
+
+  const bars = g.selectAll('.bar').data(items).join('rect')
+    .attr('y',d=>y(d.item)).attr('x',0).attr('width',0).attr('height',y.bandwidth())
+    .attr('fill',d=>d.critical?'var(--accent)':'var(--r1)').attr('opacity',d=>d.critical?.85:.6)
+    .style('cursor','pointer')
+    .on('mouseenter',function(event,d){
+      d3.select(this).attr('opacity',1);
+      tooltip.classed('visible',true).html(
+        `<strong>${d.item}</strong><br>Lead time: <strong>${d.lead} months</strong><br>
+         ${d.critical?'⚠ Critical path item':'Standard procurement item'}`
+      );
+    })
+    .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+    .on('mouseleave',function(event,d){d3.select(this).attr('opacity',d.critical?.85:.6);tooltip.classed('visible',false)});
+
+  bars.transition().duration(700).ease(d3.easeCubicOut).delay((_,i)=>i*70)
+    .attr('width',d=>x(d.lead));
+
+  g.selectAll('.lbl').data(items).join('text')
+    .attr('x',d=>x(d.lead)+8).attr('y',d=>y(d.item)+y.bandwidth()/2+5)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','11px').style('fill','var(--ink)')
+    .text(d=>`${d.lead} months`);
+
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).tickSize(0).tickPadding(10)).select('.domain').remove();
+  g.selectAll('.axis text').style('font-family','Inter Tight, sans-serif').style('font-size','12px').style('font-weight','500').style('fill','var(--ink)');
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d=>`${d} mo`));
+}
+
+/* ── COUNT-UP ── */
+function countUp(el,target,duration) {
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    const abs=Math.abs(target);
+    if(abs>=100) el.textContent=(target<0?'-':'')+Math.round(Math.abs(v)).toLocaleString();
+    else el.textContent=(target<0?'-':'')+Math.abs(v).toFixed(1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+
+/* ── LOADERS ── */
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+
+/* ── SCROLL OBSERVERS ── */
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=node.textContent.replace(/,/g,'').replace('%','').replace('x','');
+      const val=parseFloat(raw);
+      if(!isNaN(val))countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+
+const chartsDrawn={gap:false,supply:false};
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg')?.id;
+    if(id==='gap-chart'    && !chartsDrawn.gap)   {chartsDrawn.gap=true;   window.gapChartDrawn=true; drawGapChart();    hideLoaders();}
+    if(id==='supply-chart' && !chartsDrawn.supply){chartsDrawn.supply=true; drawSupplyChart();  hideLoaders();}
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+
+/* ── INIT ── */
+selectRole(0);
+updateGap();
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(chartsDrawn.gap)    drawGapChart();
+  if(chartsDrawn.supply) drawSupplyChart();
+});
+</script>
+</body>
+</html>
