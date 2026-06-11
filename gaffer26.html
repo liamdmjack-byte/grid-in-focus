@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gaffer '26 — World Cup Management Sim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0b1410;      /* floodlit pitch at night */
+  --panel:#11221a;
+  --panel2:#16301f;
+  --line:#27482f;
+  --chalk:#eaf4ec;      /* chalk lines */
+  --chalk-dim:#9db8a4;
+  --grass:#3fae6a;
+  --gold:#e8b84b;       /* trophy */
+  --red:#e0524a;
+  --yellow:#e3c93f;
+  --blue:#5aa7d6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--night);
+  background-image:
+    radial-gradient(1200px 600px at 50% -10%, rgba(63,174,106,.12), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 64px, transparent 64px 128px);
+  color:var(--chalk);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+#app{max-width:1060px;margin:0 auto;padding:18px 16px 80px}
+h1,h2,h3,.disp{font-family:'Saira Condensed','Archivo Narrow',sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+a{color:var(--grass)}
+
+/* ---------- masthead ---------- */
+.mast{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:18px;flex-wrap:wrap}
+.mast h1{font-size:30px;font-weight:800;line-height:1}
+.mast h1 .tick{color:var(--gold)}
+.mast .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--chalk-dim);letter-spacing:.08em;text-transform:uppercase}
+
+/* ---------- buttons ---------- */
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--chalk);padding:9px 16px;border-radius:6px;font-weight:600;font-size:14px;transition:background .15s,transform .1s}
+.btn:hover{background:#1d3f29}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn.primary{background:var(--grass);color:#06140b;border-color:var(--grass)}
+.btn.primary:hover{background:#4cc77c}
+.btn.gold{background:var(--gold);color:#1b1405;border-color:var(--gold)}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+/* ---------- team select ---------- */
+.lede{max-width:62ch;color:var(--chalk-dim);margin-bottom:20px}
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.gcard h3{font-size:15px;color:var(--gold);border-bottom:1px dashed var(--line);padding-bottom:6px;margin-bottom:8px}
+.team-row{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:7px;padding:7px 8px;color:var(--chalk);font-size:14px;font-weight:500}
+.team-row:hover{background:var(--panel2);border-color:var(--line)}
+.team-row:focus-visible{outline:2px solid var(--gold)}
+.team-row .flag{font-size:19px;width:24px}
+.team-row .stars{margin-left:auto;font-size:10px;color:var(--gold);letter-spacing:1px;white-space:nowrap}
+
+/* ---------- hub ---------- */
+.hubhead{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;flex-wrap:wrap}
+.hubhead .flag{font-size:40px}
+.hubhead .tname{font-size:26px;font-weight:800;line-height:1}
+.hubhead .meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--chalk-dim);margin-top:4px}
+.hubhead .next{margin-left:auto;text-align:right}
+.hubhead .next .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--chalk-dim);font-family:'IBM Plex Mono',monospace}
+.hubhead .next .fix{font-weight:700;font-size:16px}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line);color:var(--chalk-dim);padding:7px 14px;border-radius:99px;font-weight:600;font-size:13px}
+.tab.on{background:var(--chalk);color:#0b1410;border-color:var(--chalk)}
+.tab:focus-visible{outline:2px solid var(--gold)}
+
+/* ---------- panels / tables ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.panel h3{font-size:16px;color:var(--gold);margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--chalk-dim);text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid rgba(39,72,47,.45)}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-family:'IBM Plex Mono',monospace}
+tr.me td{background:rgba(63,174,106,.10)}
+tr.qual td:first-child{box-shadow:inset 3px 0 0 var(--grass)}
+.pos-G{color:var(--gold)} .pos-D{color:var(--blue)} .pos-M{color:var(--grass)} .pos-F{color:#f08f6a}
+.cond-bar{display:inline-block;width:44px;height:6px;background:#0a120d;border-radius:3px;overflow:hidden;vertical-align:middle}
+.cond-bar i{display:block;height:100%;background:var(--grass)}
+.badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.badge.inj{background:#3a1714;color:#f1a09a}
+.badge.sus{background:#3a3210;color:#ecd98a}
+.badge.cap{background:#143a22;color:#9fe0b8}
+
+/* ---------- pitch ---------- */
+.tactics-wrap{display:grid;grid-template-columns:minmax(300px,1.15fr) 1fr;gap:14px}
+@media(max-width:760px){.tactics-wrap{grid-template-columns:1fr}}
+.pitch{position:relative;aspect-ratio:3/4;background:
+  repeating-linear-gradient(0deg,#123620 0 12.5%,#0f2f1c 12.5% 25%);
+  border:2px solid var(--chalk-dim);border-radius:8px;overflow:hidden}
+.pitch::before,.pitch::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border:1.5px solid rgba(234,244,236,.45)}
+.pitch::before{top:-1px;width:46%;height:14%;border-top:none}
+.pitch::after{bottom:-1px;width:46%;height:14%;border-bottom:none}
+.pitch .half{position:absolute;top:50%;left:0;right:0;border-top:1.5px solid rgba(234,244,236,.45)}
+.pitch .circle{position:absolute;top:50%;left:50%;width:26%;aspect-ratio:1;border:1.5px solid rgba(234,244,236,.45);border-radius:50%;transform:translate(-50%,-50%)}
+.chip{position:absolute;transform:translate(-50%,-50%);width:64px;text-align:center;background:transparent;border:none;color:var(--chalk);padding:0}
+.chip .dot{width:38px;height:38px;margin:0 auto;border-radius:50%;background:var(--panel2);border:2px solid var(--chalk-dim);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;transition:border-color .15s, box-shadow .15s}
+.chip .nm{font-size:10.5px;font-weight:600;margin-top:3px;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.sel .dot{border-color:var(--gold);box-shadow:0 0 0 4px rgba(232,184,75,.25)}
+.chip.low .dot{border-color:var(--red)}
+.chip:focus-visible .dot{outline:2px solid var(--gold)}
+.bench-list{max-height:520px;overflow-y:auto}
+.bench-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid rgba(39,72,47,.45);padding:7px 6px;color:var(--chalk);font-size:13px}
+.bench-row:hover{background:var(--panel2)}
+.bench-row.sel{background:rgba(232,184,75,.12);box-shadow:inset 3px 0 0 var(--gold)}
+.bench-row .r{margin-left:auto;font-family:'IBM Plex Mono',monospace}
+.selects{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+select{background:var(--panel2);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-family:inherit;font-size:13px;font-weight:600}
+select:focus-visible{outline:2px solid var(--gold)}
+
+/* ---------- match ---------- */
+.scoreboard{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+.scoreboard .side{display:flex;align-items:center;gap:10px;min-width:0}
+.scoreboard .side.away{justify-content:flex-end;text-align:right}
+.scoreboard .side .flag{font-size:30px}
+.scoreboard .side .nm{font-weight:800;font-size:18px;font-family:'Saira Condensed';text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scoreline{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;text-align:center;min-width:110px}
+.clockrow{text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:13px;letter-spacing:.1em;margin-top:2px}
+.momentum{height:7px;border-radius:4px;background:#0a120d;overflow:hidden;display:flex;margin:10px 0 4px}
+.momentum .h{background:var(--grass);transition:width .5s}
+.momentum .a{background:var(--red);transition:width .5s}
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;height:300px;overflow-y:auto;font-size:13.5px}
+.ev{padding:5px 6px;border-bottom:1px solid rgba(39,72,47,.4);display:flex;gap:9px;align-items:baseline}
+.ev .min{font-family:'IBM Plex Mono',monospace;color:var(--chalk-dim);font-size:11.5px;min-width:32px}
+.ev.goal{background:rgba(63,174,106,.12);border-left:3px solid var(--grass);font-weight:600}
+.ev.goal-a{background:rgba(224,82,74,.10);border-left:3px solid var(--red);font-weight:600}
+.ev.card .min{color:var(--yellow)}
+.ev.redc .min{color:var(--red)}
+.matchctl{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;align-items:center}
+.othergames{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--chalk-dim);margin-top:10px;line-height:1.8}
+.statgrid{display:grid;grid-template-columns:1fr auto 1fr;gap:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-top:8px}
+.statgrid .l{text-align:right}.statgrid .c{color:var(--chalk-dim);text-align:center;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- bracket ---------- */
+.bracket{display:flex;gap:18px;overflow-x:auto;padding-bottom:8px}
+.round{min-width:185px}
+.round h4{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--chalk-dim);margin-bottom:8px}
+.tie{background:var(--panel);border:1px solid var(--line);border-radius:7px;margin-bottom:8px;font-size:12.5px;overflow:hidden}
+.tie .tm{display:flex;gap:7px;padding:5px 8px;align-items:center}
+.tie .tm+.tm{border-top:1px solid rgba(39,72,47,.5)}
+.tie .tm.win{font-weight:700}
+.tie .tm.lose{opacity:.45}
+.tie .tm .sc{margin-left:auto;font-family:'IBM Plex Mono',monospace}
+.tie.metie{border-color:var(--gold)}
+
+/* ---------- misc ---------- */
+.news-item{padding:8px 4px;border-bottom:1px solid rgba(39,72,47,.45);font-size:13.5px}
+.news-item .d{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
+.bigmoment{text-align:center;padding:50px 20px}
+.bigmoment .tr{font-size:74px;line-height:1}
+.bigmoment h2{font-size:42px;color:var(--gold);margin:14px 0 6px}
+.bigmoment p{color:var(--chalk-dim);max-width:54ch;margin:0 auto 18px}
+.footnote{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--chalk-dim);margin-top:26px;border-top:1px dashed var(--line);padding-top:10px;line-height:1.7}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:120px}
+.kpi .v{font-family:'Saira Condensed';font-size:24px;font-weight:700;color:var(--gold)}
+.kpi .k{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--chalk-dim)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media(max-width:560px){
+  .scoreline{font-size:24px;min-width:80px}
+  .hubhead .next{margin-left:0;text-align:left;width:100%}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =========================================================
+   GAFFER '26 — a World Cup 2026 management sim
+   Real 48-team field & group draw. Squads are representative
+   18-man selections (editorial ratings), not official lists.
+   ========================================================= */
+/* ---------------- DATA: 48 squads ---------------- */
+const TEAMS = {
+MEX:{n:"Mexico",f:"🇲🇽",sq:[["Luis Malagón","G",78],["Tala Rangel","G",73],["César Montes","D",77],["Johan Vásquez","D",77],["Jorge Sánchez","D",75],["Jesús Gallardo","D",74],["Kevin Álvarez","D",73],["Israel Reyes","D",73],["Edson Álvarez","M",81],["Luis Chávez","M",76],["Erik Lira","M",74],["Marcel Ruiz","M",74],["Gilberto Mora","M",78],["Orbelín Pineda","M",75],["Santiago Giménez","F",80],["Raúl Jiménez","F",79],["Hirving Lozano","F",78],["Alexis Vega","F",76]]},
+RSA:{n:"South Africa",f:"🇿🇦",sq:[["Ronwen Williams","G",77],["Ricardo Goss","G",70],["Khuliso Mudau","D",73],["Nkosinathi Sibisi","D",72],["Mothobi Mvala","D",71],["Aubrey Modiba","D",72],["Terrence Mashego","D",70],["Siyanda Xulu","D",69],["Teboho Mokoena","M",76],["Themba Zwane","M",73],["Bathusi Aubaas","M",72],["Luke le Roux","M",71],["Sphephelo Sithole","M",71],["Oswin Appollis","M",75],["Lyle Foster","F",77],["Iqraam Rayners","F",73],["Evidence Makgopa","F",72],["Elias Mokwana","F",71]]},
+KOR:{n:"South Korea",f:"🇰🇷",sq:[["Jo Hyeon-woo","G",77],["Kim Seung-gyu","G",74],["Kim Min-jae","D",86],["Kim Young-gwon","D",74],["Seol Young-woo","D",74],["Lee Myung-jae","D",73],["Kim Ju-sung","D",72],["Kwon Kyung-won","D",71],["Lee Kang-in","M",84],["Hwang In-beom","M",79],["Lee Jae-sung","M",76],["Paik Seung-ho","M",75],["Hong Hyun-seok","M",74],["Won Du-jae","M",71],["Son Heung-min","F",85],["Hwang Hee-chan","F",79],["Cho Gue-sung","F",76],["Oh Hyeon-gyu","F",75]]},
+CZE:{n:"Czechia",f:"🇨🇿",sq:[["Jindřich Staněk","G",77],["Matěj Kovář","G",76],["Ladislav Krejčí","D",79],["Vladimír Coufal","D",76],["Martin Vitík","D",76],["Tomáš Holeš","D",75],["David Jurásek","D",73],["David Zima","D",73],["Tomáš Souček","M",80],["Pavel Šulc","M",78],["Lukáš Provod","M",76],["Václav Černý","M",76],["Antonín Barák","M",75],["Lukáš Sadílek","M",72],["Patrik Schick","F",82],["Adam Hložek","F",77],["Jan Kuchta","F",73],["Tomáš Chorý","F",72]]},
+CAN:{n:"Canada",f:"🇨🇦",sq:[["Maxime Crépeau","G",75],["Dayne St. Clair","G",74],["Alphonso Davies","D",86],["Alistair Johnston","D",78],["Moïse Bombito","D",77],["Derek Cornelius","D",75],["Richie Laryea","D",74],["Kamal Miller","D",73],["Stephen Eustáquio","M",78],["Ismaël Koné","M",79],["Tajon Buchanan","M",79],["Jacob Shaffelburg","M",75],["Ali Ahmed","M",74],["Jonathan Osorio","M",75],["Jonathan David","F",84],["Cyle Larin","F",77],["Tani Oluwaseyi","F",75],["Promise David","F",74]]},
+BIH:{n:"Bosnia & Herz.",f:"🇧🇦",sq:[["Nikola Vasilj","G",76],["Martin Zlomislić","G",70],["Sead Kolašinac","D",76],["Amar Dedić","D",75],["Nikola Katić","D",73],["Tarik Muharemović","D",74],["Adrian Barišić","D",72],["Ermin Bičakčić","D",70],["Miralem Pjanić","M",74],["Ivan Bašić","M",73],["Armin Gigović","M",73],["Benjamin Tahirović","M",73],["Amir Hadžiahmetović","M",72],["Dženis Burnić","M",70],["Ermedin Demirović","F",78],["Edin Džeko","F",77],["Esmir Bajraktarević","F",74],["Haris Tabaković","F",74]]},
+QAT:{n:"Qatar",f:"🇶🇦",sq:[["Meshaal Barsham","G",74],["Saad Al Sheeb","G",70],["Bassam Al-Rawi","D",73],["Lucas Mendes","D",72],["Boualem Khoukhi","D",71],["Pedro Miguel","D",71],["Homam Ahmed","D",72],["Tarek Salman","D",70],["Hassan Al-Haydos","M",73],["Mohammed Waad","M",71],["Jassem Gaber","M",71],["Assim Madibo","M",70],["Mostafa Tarek","M",69],["Abdulaziz Hatem","M",73],["Akram Afif","F",81],["Almoez Ali","F",76],["Mohammed Muntari","F",72],["Yusuf Abdurisag","F",70]]},
+SUI:{n:"Switzerland",f:"🇨🇭",sq:[["Gregor Kobel","G",84],["Yann Sommer","G",83],["Manuel Akanji","D",84],["Nico Elvedi","D",77],["Fabian Schär","D",77],["Ricardo Rodríguez","D",75],["Silvan Widmer","D",74],["Leonidas Stergiou","D",74],["Granit Xhaka","M",84],["Remo Freuler","M",78],["Fabian Rieder","M",78],["Michel Aebischer","M",76],["Vincent Sierro","M",75],["Ardon Jashari","M",78],["Breel Embolo","F",78],["Dan Ndoye","F",79],["Noah Okafor","F",77],["Zeki Amdouni","F",76]]},
+BRA:{n:"Brazil",f:"🇧🇷",sq:[["Alisson","G",86],["Ederson","G",84],["Marquinhos","D",84],["Gabriel Magalhães","D",86],["Éder Militão","D",83],["Wesley","D",78],["Wendell","D",77],["Alexsandro","D",77],["Bruno Guimarães","M",85],["Casemiro","M",82],["Lucas Paquetá","M",82],["Gerson","M",80],["André","M",79],["Joelinton","M",79],["Vinícius Júnior","F",90],["Raphinha","F",88],["Rodrygo","F",85],["Estêvão","F",83]]},
+MAR:{n:"Morocco",f:"🇲🇦",sq:[["Yassine Bounou","G",84],["Munir Mohamedi","G",75],["Achraf Hakimi","D",88],["Nayef Aguerd","D",82],["Noussair Mazraoui","D",83],["Romain Saïss","D",76],["Abdelkabir Abqar","D",76],["Adam Masina","D",74],["Azzedine Ounahi","M",79],["Sofyan Amrabat","M",80],["Bilal El Khannouss","M",82],["Eliesse Ben Seghir","M",81],["Ismael Saibari","M",79],["Oussama Targhalline","M",75],["Brahim Díaz","F",84],["Youssef En-Nesyri","F",81],["Abde Ezzalzouli","F",79],["Soufiane Rahimi","F",77]]},
+HAI:{n:"Haiti",f:"🇭🇹",sq:[["Johny Placide","G",70],["Alexandre Pierre","G",66],["Carlens Arcus","D",69],["Ricardo Adé","D",69],["Garven Metusala","D",68],["Hannes Delcroix","D",71],["Jean-Kévin Duverne","D",68],["Christopher Attys","D",67],["Danley Jean Jacques","M",74],["Jean-Ricner Bellegarde","M",75],["Leverton Pierre","M",68],["Fafà Picault","M",68],["Derrick Etienne","M",68],["Steven Sabat","M",66],["Frantzdy Pierrot","F",72],["Duckens Nazon","F",70],["Norberto Bassette","F",70],["Ronaldo Damus","F",68]]},
+SCO:{n:"Scotland",f:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",sq:[["Angus Gunn","G",74],["Liam Kelly","G",71],["Andy Robertson","D",81],["Kieran Tierney","D",77],["Aaron Hickey","D",75],["Scott McKenna","D",73],["Grant Hanley","D",71],["Anthony Ralston","D",71],["Scott McTominay","M",84],["John McGinn","M",79],["Billy Gilmour","M",77],["Lewis Ferguson","M",77],["Ryan Christie","M",74],["Connor Barron","M",72],["Ben Doak","F",77],["Ché Adams","F",74],["Lyndon Dykes","F",71],["George Hirst","F",71]]},
+USA:{n:"United States",f:"🇺🇸",sq:[["Matt Turner","G",76],["Matt Freese","G",74],["Antonee Robinson","D",82],["Chris Richards","D",79],["Sergiño Dest","D",78],["Cameron Carter-Vickers","D",76],["Tim Ream","D",74],["Joe Scally","D",75],["Tyler Adams","M",80],["Weston McKennie","M",81],["Yunus Musah","M",78],["Gio Reyna","M",77],["Brenden Aaronson","M",76],["Johnny Cardoso","M",78],["Christian Pulisic","F",85],["Folarin Balogun","F",79],["Tim Weah","F",79],["Ricardo Pepi","F",78]]},
+PAR:{n:"Paraguay",f:"🇵🇾",sq:[["Roberto Fernández","G",76],["Carlos Coronel","G",74],["Gustavo Gómez","D",79],["Omar Alderete","D",78],["Fabián Balbuena","D",74],["Juan Cáceres","D",72],["Agustín Sández","D",72],["Ronaldo Martínez","D",70],["Miguel Almirón","M",78],["Andrés Cubas","M",76],["Mathías Villasanti","M",77],["Damián Bobadilla","M",74],["Óscar Romero","M",73],["Diego Gómez","M",77],["Julio Enciso","F",79],["Antonio Sanabria","F",75],["Ángel Romero","F",73],["Alex Arce","F",72]]},
+AUS:{n:"Australia",f:"🇦🇺",sq:[["Mat Ryan","G",76],["Joe Gauci","G",72],["Harry Souttar","D",76],["Cameron Burgess","D",73],["Lewis Miller","D",72],["Aziz Behich","D",72],["Kye Rowles","D",72],["Jason Geria","D",70],["Jackson Irvine","M",76],["Aiden O'Neill","M",73],["Connor Metcalfe","M",73],["Riley McGree","M",75],["Ajdin Hrustic","M",73],["Patrick Yazbek","M",71],["Craig Goodwin","F",74],["Mitchell Duke","F",71],["Kusini Yengi","F",72],["Nestory Irankunda","F",74]]},
+TUR:{n:"Türkiye",f:"🇹🇷",sq:[["Altay Bayındır","G",77],["Uğurcan Çakır","G",76],["Merih Demiral","D",78],["Abdülkerim Bardakcı","D",76],["Ferdi Kadıoğlu","D",79],["Çağlar Söyüncü","D",74],["Mert Müldür","D",74],["Eren Elmalı","D",73],["Hakan Çalhanoğlu","M",85],["Arda Güler","M",87],["Orkun Kökçü","M",79],["İsmail Yüksek","M",76],["Salih Özcan","M",74],["Oğuz Aydın","M",74],["Kenan Yıldız","F",86],["Kerem Aktürkoğlu","F",79],["Barış Alper Yılmaz","F",78],["Deniz Ündav","F",78]]},
+GER:{n:"Germany",f:"🇩🇪",sq:[["Marc-André ter Stegen","G",84],["Oliver Baumann","G",78],["Antonio Rüdiger","D",85],["Jonathan Tah","D",84],["Nico Schlotterbeck","D",84],["Joshua Kimmich","D",87],["David Raum","D",80],["Ridle Baku","D",75],["Jamal Musiala","M",89],["Florian Wirtz","M",90],["Aleksandar Pavlović","M",83],["Leon Goretzka","M",81],["Angelo Stiller","M",80],["Pascal Groß","M",78],["Nick Woltemade","F",82],["Kai Havertz","F",84],["Karim Adeyemi","F",81],["Niclas Füllkrug","F",79]]},
+CUW:{n:"Curaçao",f:"🇨🇼",sq:[["Eloy Room","G",72],["Delano Ladan","G",65],["Cuco Martina","D",68],["Sherel Floranus","D",68],["Roshon van Eijma","D",67],["Juriën Gaari","D",66],["Shurandy Sambo","D",69],["Rhuendly Martina","D",65],["Juninho Bacuna","M",74],["Leandro Bacuna","M",71],["Kenji Gorré","M",67],["Godfried Roemeratoe","M",66],["Vurnon Anita","M",65],["Ar'jany Martha","M",68],["Tahith Chong","F",73],["Rangelo Janga","F",69],["Gervane Kastaneer","F",68],["Jeremy Antonisse","F",67]]},
+CIV:{n:"Ivory Coast",f:"🇨🇮",sq:[["Yahia Fofana","G",76],["Badra Ali Sangaré","G",70],["Evan Ndicka","D",81],["Wilfried Singo","D",77],["Odilon Kossounou","D",77],["Ghislain Konan","D",73],["Serge Aurier","D",72],["Emmanuel Agbadou","D",75],["Franck Kessié","M",79],["Ibrahim Sangaré","M",76],["Seko Fofana","M",76],["Jean Michaël Seri","M",72],["Lazare Amani","M",72],["Hamed Traorè","M",73],["Amad Diallo","F",83],["Simon Adingra","F",77],["Nicolas Pépé","F",76],["Sébastien Haller","F",74]]},
+ECU:{n:"Ecuador",f:"🇪🇨",sq:[["Hernán Galíndez","G",74],["Moisés Ramírez","G",72],["Willian Pacho","D",85],["Piero Hincapié","D",84],["Pervis Estupiñán","D",79],["Joel Ordóñez","D",77],["Félix Torres","D",75],["Angelo Preciado","D",75],["Moisés Caicedo","M",88],["Kendry Páez","M",79],["Gonzalo Plata","M",77],["Alan Franco","M",75],["Jeremy Sarmiento","M",75],["Carlos Gruezo","M",73],["Enner Valencia","F",77],["Kevin Rodríguez","F",74],["John Yeboah","F",73],["Nilson Angulo","F",74]]},
+NED:{n:"Netherlands",f:"🇳🇱",sq:[["Bart Verbruggen","G",83],["Mark Flekken","G",78],["Virgil van Dijk","D",88],["Matthijs de Ligt","D",84],["Denzel Dumfries","D",84],["Nathan Aké","D",83],["Jorrel Hato","D",81],["Stefan de Vrij","D",80],["Frenkie de Jong","M",87],["Ryan Gravenberch","M",87],["Tijjani Reijnders","M",85],["Xavi Simons","M",84],["Jerdy Schouten","M",81],["Quinten Timber","M",79],["Cody Gakpo","F",85],["Memphis Depay","F",81],["Donyell Malen","F",79],["Brian Brobbey","F",77]]},
+JPN:{n:"Japan",f:"🇯🇵",sq:[["Zion Suzuki","G",78],["Keisuke Osako","G",73],["Takehiro Tomiyasu","D",80],["Ko Itakura","D",79],["Hiroki Ito","D",78],["Koki Machida","D",76],["Yukinari Sugawara","D",76],["Ayumu Seko","D",74],["Takefusa Kubo","M",84],["Kaoru Mitoma","M",84],["Wataru Endo","M",80],["Daichi Kamada","M",80],["Ritsu Doan","M",81],["Hidemasa Morita","M",78],["Kyogo Furuhashi","F",78],["Ayase Ueda","F",78],["Daizen Maeda","F",77],["Koki Ogawa","F",75]]},
+SWE:{n:"Sweden",f:"🇸🇪",sq:[["Robin Olsen","G",74],["Viktor Johansson","G",73],["Isak Hien","D",78],["Victor Lindelöf","D",74],["Carl Starfelt","D",74],["Gabriel Gudmundsson","D",74],["Emil Krafth","D",72],["Daniel Svensson","D",73],["Dejan Kulusevski","M",84],["Lucas Bergvall","M",80],["Mattias Svanberg","M",74],["Jens Cajuste","M",73],["Jesper Karlström","M",72],["Yasin Ayari","M",75],["Alexander Isak","F",89],["Viktor Gyökeres","F",88],["Anthony Elanga","F",80],["Benjamin Nygren","F",73]]},
+TUN:{n:"Tunisia",f:"🇹🇳",sq:[["Béchir Ben Saïd","G",73],["Aymen Dahmen","G",71],["Montassar Talbi","D",76],["Ali Abdi","D",74],["Dylan Bronn","D",72],["Yassine Meriah","D",72],["Wajdi Kechrida","D",70],["Mohamed Dräger","D",69],["Aïssa Laïdouni","M",75],["Ellyes Skhiri","M",75],["Hannibal Mejbri","M",73],["Mohamed Ali Ben Romdhane","M",73],["Ferjani Sassi","M",69],["Anis Ben Slimane","M",71],["Elias Achouri","F",74],["Hazem Mastouri","F",70],["Firas Chaouat","F",69],["Seifeddine Jaziri","F",70]]},
+BEL:{n:"Belgium",f:"🇧🇪",sq:[["Thibaut Courtois","G",88],["Koen Casteels","G",79],["Timothy Castagne","D",78],["Wout Faes","D",77],["Arthur Theate","D",77],["Zeno Debast","D",76],["Maxim De Cuyper","D",76],["Thomas Meunier","D",74],["Kevin De Bruyne","M",85],["Amadou Onana","M",82],["Youri Tielemans","M",82],["Nicolas Raskin","M",78],["Hans Vanaken","M",77],["Arne Engels","M",76],["Jérémy Doku","F",86],["Romelu Lukaku","F",83],["Charles De Ketelaere","F",82],["Loïs Openda","F",81]]},
+EGY:{n:"Egypt",f:"🇪🇬",sq:[["Mohamed El Shenawy","G",75],["Mohamed Sobhi","G",72],["Mohamed Abdelmonem","D",75],["Ahmed Hegazi","D",72],["Yasser Ibrahim","D",71],["Ahmed Fattouh","D",71],["Mohamed Hany","D",70],["Khaled Sobhi","D",68],["Emam Ashour","M",77],["Zizo","M",76],["Trezeguet","M",75],["Ibrahim Adel","M",75],["Mohamed Elneny","M",72],["Hamdy Fathi","M",71],["Mohamed Salah","F",89],["Omar Marmoush","F",85],["Mostafa Mohamed","F",75],["Salah Mohsen","F",70]]},
+IRN:{n:"Iran",f:"🇮🇷",sq:[["Alireza Beiranvand","G",76],["Payam Niazmand","G",71],["Shoja Khalilzadeh","D",72],["Majid Hosseini","D",72],["Milad Mohammadi","D",71],["Sadegh Moharrami","D",71],["Hossein Kanaani","D",70],["Ehsan Hajsafi","D",69],["Saeid Ezatolahi","M",73],["Alireza Jahanbakhsh","M",73],["Saman Ghoddos","M",72],["Ali Gholizadeh","M",73],["Ahmad Nourollahi","M",71],["Mohammad Karimi","M",70],["Mehdi Taremi","F",80],["Sardar Azmoun","F",76],["Mehdi Ghayedi","F",73],["Karim Ansarifard","F",69]]},
+NZL:{n:"New Zealand",f:"🇳🇿",sq:[["Max Crocombe","G",70],["Alex Paulsen","G",71],["Liberato Cacace","D",76],["Michael Boxall","D",72],["Tyler Bindon","D",72],["Nando Pijnaker","D",70],["Francis de Vries","D",68],["Storm Roux","D",67],["Matt Garbett","M",73],["Marko Stamenić","M",73],["Joe Bell","M",72],["Sarpreet Singh","M",70],["Alex Rufer","M",69],["Callum McCowatt","M",69],["Chris Wood","F",80],["Ben Waine","F",69],["Logan Rogerson","F",68],["Max Mata","F",68]]},
+ESP:{n:"Spain",f:"🇪🇸",sq:[["Unai Simón","G",85],["David Raya","G",84],["Pau Cubarsí","D",85],["Dani Carvajal","D",83],["Aymeric Laporte","D",82],["Robin Le Normand","D",83],["Marc Cucurella","D",84],["Alejandro Grimaldo","D",82],["Rodri","M",90],["Pedri","M",90],["Fabián Ruiz","M",85],["Martín Zubimendi","M",85],["Dani Olmo","M",85],["Mikel Merino","M",83],["Lamine Yamal","F",92],["Nico Williams","F",86],["Mikel Oyarzabal","F",84],["Álvaro Morata","F",80]]},
+CPV:{n:"Cape Verde",f:"🇨🇻",sq:[["Vozinha","G",71],["Márcio Rosa","G",67],["Logan Costa","D",76],["Roberto Lopes","D",71],["Diney Borges","D",69],["Dylan Tavares","D",68],["Sidny Lopes Cabral","D",67],["Stopira","D",66],["Jamiro Monteiro","M",73],["Kenny Rocha Santos","M",70],["Deroy Duarte","M",70],["Laros Duarte","M",69],["Patrick Andrade","M",69],["Telmo Arcanjo","M",69],["Ryan Mendes","F",72],["Dailon Livramento","F",71],["Bebé","F",70],["Garry Rodrigues","F",69]]},
+KSA:{n:"Saudi Arabia",f:"🇸🇦",sq:[["Mohammed Al-Owais","G",74],["Nawaf Al-Aqidi","G",71],["Hassan Al-Tambakti","D",74],["Ali Al-Bulaihi","D",72],["Saud Abdulhamid","D",73],["Yasser Al-Shahrani","D",71],["Ali Lajami","D",71],["Abdulelah Al-Amri","D",70],["Salem Al-Dawsari","M",79],["Mohamed Kanno","M",74],["Musab Al-Juwayr","M",74],["Sami Al-Najei","M",72],["Abdullah Al-Khaibari","M",71],["Nasser Al-Dawsari","M",71],["Firas Al-Buraikan","F",74],["Saleh Al-Shehri","F",72],["Abdullah Radif","F",72],["Haitham Asiri","F",71]]},
+URU:{n:"Uruguay",f:"🇺🇾",sq:[["Sergio Rochet","G",80],["Santiago Mele","G",74],["Ronald Araújo","D",85],["José María Giménez","D",83],["Mathías Olivera","D",79],["Nahitan Nández","D",77],["Sebastián Cáceres","D",75],["Matías Viña","D",75],["Federico Valverde","M",89],["Manuel Ugarte","M",83],["Rodrigo Bentancur","M",82],["Giorgian De Arrascaeta","M",81],["Facundo Pellistri","M",76],["Nicolás de la Cruz","M",78],["Darwin Núñez","F",84],["Maximiliano Araújo","F",77],["Rodrigo Aguirre","F",75],["Cristian Olivera","F",75]]},
+FRA:{n:"France",f:"🇫🇷",sq:[["Mike Maignan","G",87],["Lucas Chevalier","G",81],["William Saliba","D",87],["Jules Koundé","D",85],["Dayot Upamecano","D",85],["Ibrahima Konaté","D",83],["Theo Hernandez","D",82],["Malo Gusto","D",79],["Aurélien Tchouaméni","M",85],["Eduardo Camavinga","M",84],["Michael Olise","M",87],["Antoine Griezmann","M",83],["Adrien Rabiot","M",82],["Warren Zaïre-Emery","M",81],["Kylian Mbappé","F",92],["Ousmane Dembélé","F",90],["Marcus Thuram","F",84],["Bradley Barcola","F",83]]},
+SEN:{n:"Senegal",f:"🇸🇳",sq:[["Édouard Mendy","G",82],["Mory Diaw","G",72],["Kalidou Koulibaly","D",81],["Moussa Niakhaté","D",77],["Abdou Diallo","D",75],["Youssouf Sabaly","D",74],["Ismail Jakobs","D",75],["Formose Mendy","D",73],["Pape Matar Sarr","M",81],["Lamine Camara","M",79],["Habib Diarra","M",78],["Idrissa Gana Gueye","M",77],["Pape Gueye","M",75],["Pathé Ciss","M",73],["Nicolas Jackson","F",82],["Sadio Mané","F",81],["Iliman Ndiaye","F",81],["Ismaïla Sarr","F",80]]},
+IRQ:{n:"Iraq",f:"🇮🇶",sq:[["Jalal Hassan","G",69],["Ahmed Basil","G",67],["Merchas Doski","D",69],["Zaid Tahseen","D",68],["Akam Hashim","D",67],["Hussein Ali","D",67],["Rebin Sulaka","D",66],["Manaf Younis","D",66],["Ibrahim Bayesh","M",72],["Zidane Iqbal","M",71],["Amir Al-Ammari","M",70],["Youssef Amyn","M",69],["Osama Rashid","M",68],["Sherko Karim","M",67],["Aymen Hussein","F",74],["Ali Al-Hamadi","F",72],["Ali Jasim","F",72],["Mohanad Ali","F",71]]},
+NOR:{n:"Norway",f:"🇳🇴",sq:[["Ørjan Nyland","G",75],["Egil Selvik","G",71],["Kristoffer Ajer","D",77],["Leo Østigård","D",75],["Julian Ryerson","D",75],["Torbjørn Heggem","D",74],["David Møller Wolfe","D",74],["Marcus Holmgren Pedersen","D",73],["Martin Ødegaard","M",87],["Antonio Nusa","M",81],["Oscar Bobb","M",80],["Sander Berge","M",77],["Morten Thorsby","M",72],["Patrick Berg","M",74],["Erling Haaland","F",93],["Alexander Sørloth","F",81],["Jørgen Strand Larsen","F",78],["Erik Botheim","F",71]]},
+ARG:{n:"Argentina",f:"🇦🇷",sq:[["Emiliano Martínez","G",87],["Gerónimo Rulli","G",79],["Cristian Romero","D",86],["Lisandro Martínez","D",84],["Nahuel Molina","D",80],["Nicolás Otamendi","D",80],["Nicolás Tagliafico","D",79],["Leonardo Balerdi","D",79],["Enzo Fernández","M",87],["Alexis Mac Allister","M",86],["Rodrigo De Paul","M",84],["Giovani Lo Celso","M",80],["Leandro Paredes","M",80],["Thiago Almada","M",81],["Lionel Messi","F",88],["Julián Álvarez","F",89],["Lautaro Martínez","F",87],["Nico Paz","F",84]]},
+ALG:{n:"Algeria",f:"🇩🇿",sq:[["Alexis Guendouz","G",72],["Anthony Mandrea","G",71],["Rayan Aït-Nouri","D",82],["Ramy Bensebaini","D",78],["Aïssa Mandi","D",74],["Youcef Atal","D",73],["Jaouen Hadjam","D",74],["Mohamed Amine Tougai","D",72],["Himad Abdelli","M",76],["Ismaël Bennacer","M",78],["Farès Chaïbi","M",76],["Hicham Boudaoui","M",74],["Ramiz Zerrouki","M",73],["Nabil Bentaleb","M",72],["Riyad Mahrez","F",81],["Mohamed Amoura","F",80],["Amine Gouiri","F",78],["Baghdad Bounedjah","F",72]]},
+AUT:{n:"Austria",f:"🇦🇹",sq:[["Alexander Schlager","G",75],["Patrick Pentz","G",74],["Kevin Danso","D",78],["Philipp Lienhart","D",76],["Stefan Posch","D",76],["Maximilian Wöber","D",74],["Phillipp Mwene","D",73],["Flavius Daniliuc","D",73],["Marcel Sabitzer","M",80],["Konrad Laimer","M",80],["Christoph Baumgartner","M",79],["Nicolas Seiwald","M",78],["Romano Schmid","M",76],["Alexander Prass","M",75],["Marko Arnautović","F",76],["Michael Gregoritsch","F",74],["Sasa Kalajdzic","F",72],["Nikolas Wurmbrand","F",72]]},
+JOR:{n:"Jordan",f:"🇯🇴",sq:[["Yazeed Abulaila","G",71],["Abdallah Al-Fakhouri","G",67],["Abdallah Nasib","D",69],["Yazan Al-Arab","D",69],["Mohammad Abu Hasheesh","D",67],["Ihsan Haddad","D",66],["Sa'ed Al-Rosan","D",66],["Bara' Marei","D",65],["Nizar Al-Rashdan","M",69],["Rajaei Ayed","M",68],["Noor Al-Rawabdeh","M",68],["Mahmoud Al-Mardi","M",67],["Ibrahim Sadeh","M",66],["Anas Awadallah","M",65],["Musa Al-Taamari","F",78],["Yazan Al-Naimat","F",73],["Ali Olwan","F",72],["Hamza Al-Dardour","F",66]]},
+POR:{n:"Portugal",f:"🇵🇹",sq:[["Diogo Costa","G",85],["José Sá","G",79],["Rúben Dias","D",87],["Nuno Mendes","D",86],["João Cancelo","D",83],["Gonçalo Inácio","D",81],["Diogo Dalot","D",81],["António Silva","D",80],["Vitinha","M",88],["Bruno Fernandes","M",87],["Bernardo Silva","M",86],["João Neves","M",86],["João Palhinha","M",81],["Rúben Neves","M",81],["Rafael Leão","F",85],["Cristiano Ronaldo","F",84],["Pedro Neto","F",82],["Gonçalo Ramos","F",81]]},
+COD:{n:"DR Congo",f:"🇨🇩",sq:[["Lionel Mpasi","G",72],["Dimitry Bertaud","G",69],["Chancel Mbemba","D",76],["Axel Tuanzebe","D",72],["Arthur Masuaku","D",73],["Gédéon Kalulu","D",72],["Joris Kayembe","D",71],["Rocky Bushiri","D",70],["Ngal'ayel Mukau","M",75],["Charles Pickel","M",73],["Samuel Moutoussamy","M",71],["Edo Kayembe","M",71],["Aaron Tshibola","M",69],["Noah Sadiki","M",75],["Yoane Wissa","F",80],["Cédric Bakambu","F",74],["Fiston Mayele","F",73],["Meschack Elia","F",72]]},
+UZB:{n:"Uzbekistan",f:"🇺🇿",sq:[["Utkir Yusupov","G",70],["Botirali Ergashev","G",66],["Abdukodir Khusanov","D",82],["Rustam Ashurmatov","D",71],["Sherzod Nasrullaev","D",69],["Farrukh Sayfiev","D",68],["Khojiakbar Alijonov","D",68],["Umar Eshmurodov","D",67],["Abbosbek Fayzullaev","M",78],["Otabek Shukurov","M",71],["Jaloliddin Masharipov","M",71],["Oston Urunov","M",70],["Diyor Kholmatov","M",68],["Abdulla Abdullaev","M",69],["Eldor Shomurodov","F",76],["Igor Sergeev","F",70],["Khusayin Norchaev","F",69],["Bobur Abdikholikov","F",68]]},
+COL:{n:"Colombia",f:"🇨🇴",sq:[["Camilo Vargas","G",78],["Álvaro Montero","G",74],["Dávinson Sánchez","D",82],["Daniel Muñoz","D",81],["Jhon Lucumí","D",80],["Carlos Cuesta","D",76],["Johan Mojica","D",74],["Santiago Arias","D",73],["James Rodríguez","M",81],["Richard Ríos","M",80],["Jefferson Lerma","M",78],["Jhon Arias","M",80],["Kevin Castaño","M",75],["Juan Portilla","M",73],["Luis Díaz","F",88],["Jhon Durán","F",81],["Jhon Córdoba","F",78],["Rafael Santos Borré","F",76]]},
+ENG:{n:"England",f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",sq:[["Jordan Pickford","G",84],["Dean Henderson","G",78],["Trent Alexander-Arnold","D",86],["John Stones","D",84],["Marc Guéhi","D",83],["Levi Colwill","D",81],["Kyle Walker","D",79],["Myles Lewis-Skelly","D",80],["Jude Bellingham","M",89],["Declan Rice","M",87],["Cole Palmer","M",87],["Phil Foden","M",85],["Morgan Rogers","M",82],["Adam Wharton","M",80],["Harry Kane","F",90],["Bukayo Saka","F",88],["Anthony Gordon","F",82],["Ollie Watkins","F",82]]},
+CRO:{n:"Croatia",f:"🇭🇷",sq:[["Dominik Livaković","G",82],["Ivica Ivušić","G",74],["Joško Gvardiol","D",86],["Josip Šutalo","D",79],["Josip Stanišić","D",79],["Marin Pongračić","D",77],["Borna Sosa","D",75],["Duje Ćaleta-Car","D",74],["Luka Modrić","M",84],["Mateo Kovačić","M",83],["Petar Sučić","M",80],["Luka Sučić","M",77],["Mario Pašalić","M",77],["Nikola Moro","M",74],["Andrej Kramarić","F",80],["Ante Budimir","F",78],["Franjo Ivanović","F",76],["Marco Pašalić","F",74]]},
+GHA:{n:"Ghana",f:"🇬🇭",sq:[["Lawrence Ati-Zigi","G",72],["Joseph Wollacott","G",70],["Mohammed Salisu","D",77],["Alexander Djiku","D",74],["Tariq Lamptey","D",75],["Alidu Seidu","D",73],["Gideon Mensah","D",71],["Jonas Adjetey","D",72],["Mohammed Kudus","M",84],["Thomas Partey","M",80],["Abu Francis","M",74],["Elisha Owusu","M",71],["Salis Abdul Samed","M",72],["Kwasi Sibo","M",70],["Antoine Semenyo","F",83],["Iñaki Williams","F",78],["Ernest Nuamah","F",75],["Jordan Ayew","F",74]]},
+PAN:{n:"Panama",f:"🇵🇦",sq:[["Orlando Mosquera","G",72],["Luis Mejía","G",69],["Michael Murillo","D",74],["Fidel Escobar","D",71],["Andrés Andrade","D",70],["Edgardo Fariña","D",69],["Eric Davis","D",68],["César Blackman","D",69],["Adalberto Carrasquilla","M",77],["Aníbal Godoy","M",71],["Cristian Martínez","M",70],["Yoel Bárcenas","M",70],["Freddy Góndola","M",68],["Édgar Yoel Bárcenas","M",68],["José Fajardo","F",72],["Cecilio Waterman","F",71],["Ismael Díaz","F",72],["Eduardo Guerrero","F",69]]}
+};
+/* real final-draw groups, in fixture-pattern order */
+const GROUPS={A:["MEX","RSA","KOR","CZE"],B:["CAN","BIH","QAT","SUI"],C:["BRA","MAR","HAI","SCO"],D:["USA","PAR","AUS","TUR"],E:["GER","CUW","CIV","ECU"],F:["NED","JPN","SWE","TUN"],G:["BEL","EGY","IRN","NZL"],H:["ESP","CPV","KSA","URU"],I:["FRA","SEN","IRQ","NOR"],J:["ARG","ALG","AUT","JOR"],K:["POR","COD","UZB","COL"],L:["ENG","CRO","GHA","PAN"]};
+
+/* ---------------- ENGINE ---------------- */
+const FORMATIONS={
+ "4-3-3":{slots:["G","D","D","D","D","M","M","M","F","F","F"],xy:[[50,92],[15,74],[38,77],[62,77],[85,74],[28,53],[50,58],[72,53],[18,27],[50,20],[82,27]]},
+ "4-2-3-1":{slots:["G","D","D","D","D","M","M","M","M","M","F"],xy:[[50,92],[15,74],[38,77],[62,77],[85,74],[38,62],[62,62],[20,42],[50,40],[80,42],[50,20]]},
+ "4-4-2":{slots:["G","D","D","D","D","M","M","M","M","F","F"],xy:[[50,92],[15,74],[38,77],[62,77],[85,74],[14,50],[38,55],[62,55],[86,50],[38,24],[62,24]]},
+ "3-5-2":{slots:["G","D","D","D","M","M","M","M","M","F","F"],xy:[[50,92],[28,78],[50,80],[72,78],[10,54],[32,56],[50,60],[68,56],[90,54],[38,24],[62,24]]},
+ "5-3-2":{slots:["G","D","D","D","D","D","M","M","M","F","F"],xy:[[50,92],[10,68],[30,77],[50,79],[70,77],[90,68],[28,53],[50,58],[72,53],[38,24],[62,24]]}
+};
+const MENT={def:{nm:"Defensive",att:.78,con:.78},bal:{nm:"Balanced",att:1,con:1},atk:{nm:"Attacking",att:1.25,con:1.28}};
+const STAGES=["GROUP 1","GROUP 2","GROUP 3","R32","R16","QF","SF","FINAL"];
+
+let G=null; // game state
+
+function newGame(teamId){
+  const players={};
+  for(const id in TEAMS) TEAMS[id].sq.forEach((p,i)=>{
+    players[id+"_"+i]={id:id+"_"+i,team:id,n:p[0],pos:p[1],r:p[2],cond:100,goals:0,assists:0,yc:0,injured:0,banned:0,apps:0};
+  });
+  G={me:teamId,players,stage:0,alive:true,news:[],results:{},standings:initStandings(),
+     formation:"4-3-3",mentality:"bal",xi:null,bracket:null,placed:null,champion:null,thirdMatch:null};
+  G.xi=autoXI(teamId,G.formation);
+  pushNews("Welcome to the dugout","You take charge of "+TEAMS[teamId].n+" for the 2026 World Cup. Group "+groupOf(teamId)+" awaits. Set your XI before matchday 1.");
+}
+function groupOf(id){for(const g in GROUPS) if(GROUPS[g].includes(id)) return g; return "?";}
+function teamPlayers(id){return Object.values(G.players).filter(p=>p.team===id);}
+function available(p){return !p.injured && !p.banned;}
+function eff(p,slot){let v=p.r*(0.6+0.4*(p.cond/100)); if(slot && slot!==p.pos){v-= (slot==="G"||p.pos==="G")?25:6;} return v;}
+
+function autoXI(id,form){
+  const slots=FORMATIONS[form].slots, pool=teamPlayers(id).filter(available), used=new Set(), xi=[];
+  for(const s of slots){
+    let best=null,bv=-1;
+    for(const p of pool){ if(used.has(p.id))continue; if(s==="G"&&p.pos!=="G")continue; if(s!=="G"&&p.pos==="G")continue;
+      const v=eff(p,s)+(p.pos===s?4:0); if(v>bv){bv=v;best=p;} }
+    if(best){used.add(best.id); xi.push(best.id);} else xi.push(null);
+  }
+  return xi;
+}
+function teamStrength(id,xiIds,ment){
+  const f=ment||{att:1,con:1};
+  let att=0,def=0,mid=0,gk=60,nO=0;
+  const slots = xiIds.form?FORMATIONS[xiIds.form].slots:null;
+  xiIds.ids.forEach((pid,i)=>{
+    if(!pid)return; const p=G.players[pid]; const s=slots?slots[i]:p.pos; const v=eff(p,s);
+    if(s==="G"){gk=v;return;} nO++;
+    if(s==="D"){def+=v*1.0; mid+=v*0.25;}
+    else if(s==="M"){mid+=v; att+=v*0.45; def+=v*0.45;}
+    else {att+=v*1.1; mid+=v*0.2;}
+  });
+  const sc=nO?10/nO:1;
+  return {att:(att*sc)*f.att, def:(def*sc+gk*0.9)/f.con, mid:mid*sc, n:nO+1};
+}
+function aiSetup(id){
+  const ids=autoXI(id,"4-3-3");
+  return {ids,form:"4-3-3"};
+}
+
+/* simulate a full match between two setups; if interactive, returns generator of minute events */
+function simMatch(hId,aId,opts={}){
+  const knockout=opts.knockout||false;
+  const hSet=opts.hSet||aiSetup(hId), aSet=opts.aSet||aiSetup(aId);
+  const hM=opts.hMent||MENT.bal, aM=opts.aMent||MENT.bal;
+  const st={h:hId,a:aId,hs:0,as:0,min:0,evs:[],hSet,aSet,hM,aM,done:false,knockout,
+            shots:{h:0,a:0},sot:{h:0,a:0},mom:50,subs:{h:0,a:0},pens:null,et:false};
+  st.step=()=>minute(st);
+  return st;
+}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function wPick(ids,wfn){let t=0;const ws=ids.map(id=>{const w=wfn(G.players[id]);t+=w;return w;});let r=Math.random()*t;for(let i=0;i<ids.length;i++){r-=ws[i];if(r<=0)return ids[i];}return ids[ids.length-1];}
+function outfield(set){const slots=FORMATIONS[set.form].slots;return set.ids.filter((id,i)=>id&&slots[i]!=="G");}
+
+const GOAL_LINES=["slams it into the roof of the net","curls it into the far corner","taps in from close range","heads it home","finishes coolly past the keeper","thunders one in from distance","pokes it through the keeper's legs"];
+const CHANCE_LINES=["forces a sharp save","drags a shot just wide","rattles the crossbar","sees the effort blocked at the last moment","heads over from six yards","is denied by a brilliant stop"];
+
+function minute(st){
+  if(st.done)return null;
+  st.min++;
+  const out=[];
+  const sides=[["h","a",st.hSet,st.aSet,st.hM,st.aM],["a","h",st.aSet,st.hSet,st.aM,st.hM]];
+  for(const [me,op,mySet,opSet,myM,opM] of sides){
+    const A=teamStrength(st[me],mySet,myM), D=teamStrength(st[op],opSet,opM);
+    const ratio=A.att/Math.max(40,D.def);
+    const pChance=0.040*Math.pow(ratio,1.6)*(opM===MENT.atk?1.12:1);
+    const ofd=outfield(mySet);
+    if(Math.random()<pChance && ofd.length){
+      st.shots[me]++; st.mom += (me==="h"?4:-4); st.mom=Math.max(8,Math.min(92,st.mom));
+      const shooter=wPick(ofd,p=>p.pos==="F"?p.r*2.4:p.pos==="M"?p.r*1.1:p.r*0.25);
+      const pl=G.players[shooter];
+      const conv=0.30*Math.pow(ratio,0.45);
+      if(Math.random()<conv){
+        st[me+"s"]++; st.sot[me]++; pl.goals++;
+        out.push({t:me==="h"?"goal":"goal-a",min:st.min,txt:"GOAL! "+pl.n+" "+pick(GOAL_LINES)+"! "+scoreline(st)});
+      } else if(Math.random()<0.55){ st.sot[me]++; out.push({t:"info",min:st.min,txt:pl.n+" "+pick(CHANCE_LINES)+"."}); }
+    }
+    /* cards */
+    if(Math.random()<0.012 && ofd.length){
+      const pid=wPick(ofd,p=>p.pos==="D"?2:p.pos==="M"?1.4:0.7), pl=G.players[pid];
+      pl.yc++;
+      if(pl.yc>=2 && pl._ycThis){ /* second yellow this match */
+        out.push({t:"redc",min:st.min,txt:"RED CARD! "+pl.n+" is sent off for a second booking."});
+        removeFromSet(mySet,pid); pl.banned=1; pl._fresh=true; pl.yc=0;
+      } else {
+        pl._ycThis=true;
+        out.push({t:"card",min:st.min,txt:"Yellow card for "+pl.n+"."});
+        if(pl.yc>=2){pl.banned=1;pl._fresh=true;pl.yc=0; if(st.h===G.me||st.a===G.me) out.push({t:"info",min:st.min,txt:pl.n+" will be suspended for the next match (accumulated bookings)."});}
+      }
+    }
+    if(Math.random()<0.0009 && outfield(mySet).length>7){
+      const pid=pick(outfield(mySet)), pl=G.players[pid];
+      out.push({t:"redc",min:st.min,txt:"RED CARD! "+pl.n+" is shown a straight red!"});
+      removeFromSet(mySet,pid); pl.banned=1; pl._fresh=true;
+    }
+    /* injuries */
+    if(Math.random()<0.0016 && outfield(mySet).length){
+      const pid=pick(outfield(mySet)), pl=G.players[pid];
+      pl.injured=1+Math.floor(Math.random()*3); pl._fresh=true;
+      out.push({t:"redc",min:st.min,txt:"Injury: "+pl.n+" can't continue ("+pl.injured+" match"+(pl.injured>1?"es":"")+")."});
+      removeFromSet(mySet,pid);
+    }
+    /* fatigue */
+    mySet.ids.forEach(id=>{if(id){const p=G.players[id]; p.cond=Math.max(20,p.cond-(0.34+(myM===MENT.atk?0.06:0)));}});
+  }
+  st.mom += st.mom>50?-0.35:0.35;
+  const FT=st.et?120:90;
+  if(st.min>=FT){
+    if(st.knockout && st.hs===st.as && !st.et){ st.et=true; out.push({t:"info",min:90,txt:"Full time, level. We're going to extra time."}); }
+    else if(st.knockout && st.hs===st.as && st.et){ shootout(st,out); st.done=true; }
+    else { st.done=true; out.push({t:"info",min:st.min,txt:"FULL TIME. "+scoreline(st)}); }
+  } else if(st.min===45) out.push({t:"info",min:45,txt:"Half time. "+scoreline(st)});
+  return out;
+}
+function removeFromSet(set,pid){const i=set.ids.indexOf(pid); if(i>=0)set.ids[i]=null;}
+function scoreline(st){return TEAMS[st.h].n+" "+st.hs+"–"+st.as+" "+TEAMS[st.a].n;}
+function shootout(st,out){
+  const hS=teamStrength(st.h,st.hSet,MENT.bal), aS=teamStrength(st.a,st.aSet,MENT.bal);
+  let h=0,a=0;
+  for(let i=0;i<5;i++){ if(Math.random()<0.74+ (hS.att-aS.def)/2000) h++; if(Math.random()<0.74+(aS.att-hS.def)/2000) a++; }
+  while(h===a){ if(Math.random()<0.74)h++; if(Math.random()<0.74)a++; }
+  st.pens={h,a};
+  out.push({t:h>a?"goal":"goal-a",min:120,txt:"Penalties: "+TEAMS[st.h].n+" "+h+"–"+a+" "+TEAMS[st.a].n+". "+TEAMS[h>a?st.h:st.a].n+" go through!"});
+}
+function runFull(st){while(!st.done)st.step(); finishMatch(st); return st;}
+function winner(t){ const r=t.res||t; if(r.hs>r.as)return r.h; if(r.as>r.hs)return r.a; if(r.pens)return r.pens.h>r.pens.a?r.h:r.a; return null; }
+function finishMatch(st){
+  [[st.hSet],[st.aSet]].forEach(([s])=>s.ids.forEach(id=>{if(id)G.players[id].apps++;}));
+  Object.values(G.players).forEach(p=>delete p._ycThis);
+}
+function recover(){
+  Object.values(G.players).forEach(p=>{p.cond=Math.min(100,p.cond+34);});
+}
+function decrementBans(playedIds){
+  /* reduce bans/injuries for teams that just played a matchday */
+  Object.values(G.players).forEach(p=>{
+    if(playedIds.has(p.team)){ if(p.banned>0)p.banned--; if(p.injured>0)p.injured--; }
+  });
+}
+
+/* ---------------- group stage ---------------- */
+function initStandings(){const s={};for(const g in GROUPS)GROUPS[g].forEach(id=>s[id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});return s;}
+function groupFixtures(g,md){
+  const [t1,t2,t3,t4]=GROUPS[g];
+  if(md===0)return [[t1,t2],[t3,t4]];
+  if(md===1)return [[t4,t2],[t1,t3]];
+  return [[t4,t1],[t2,t3]];
+}
+function applyResult(h,a,hs,as){
+  const H=G.standings[h],A=G.standings[a];
+  H.p++;A.p++;H.gf+=hs;H.ga+=as;A.gf+=as;A.ga+=hs;
+  if(hs>as){H.w++;A.l++;H.pts+=3;} else if(as>hs){A.w++;H.l++;A.pts+=3;} else {H.d++;A.d++;H.pts++;A.pts++;}
+}
+function sortGroup(g){
+  return [...GROUPS[g]].sort((x,y)=>{const X=G.standings[x],Y=G.standings[y];
+    return Y.pts-X.pts || (Y.gf-Y.ga)-(X.gf-X.ga) || Y.gf-X.gf || avgR(y)-avgR(x);});
+}
+function avgR(id){return TEAMS[id].sq.reduce((s,p)=>s+p[2],0)/TEAMS[id].sq.length;}
+function buildBracket(){
+  const winners=[],runners=[],thirds=[];
+  for(const g in GROUPS){const o=sortGroup(g);winners.push(o[0]);runners.push(o[1]);thirds.push(o[2]);}
+  const rank=id=>{const s=G.standings[id];return s.pts*100+(s.gf-s.ga)*5+s.gf+avgR(id)/100;};
+  winners.sort((a,b)=>rank(b)-rank(a)); runners.sort((a,b)=>rank(b)-rank(a)); thirds.sort((a,b)=>rank(b)-rank(a));
+  const q=[...winners,...runners,...thirds.slice(0,8)];
+  const ties=[];
+  for(let i=0;i<16;i++){let A=q[i],B=q[31-i];
+    if(groupOf(A)===groupOf(B)){const j=31-i-1; if(j>15){[q[31-i],q[j]]=[q[j],q[31-i]];B=q[31-i];}}
+    ties.push({h:A,a:B,res:null});
+  }
+  return {R32:ties,R16:[],QF:[],SF:[],F:[],TP:[]};
+}
+function pushNews(d,txt){G.news.unshift({d,txt});}
+
+/* ---------------- UI ---------------- */
+const app=document.getElementById("app");
+let UI={screen:"select",tab:"overview",selXi:null,selBench:null,match:null,timer:null,speed:140,paused:false,subUsed:null};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function stars(id){const a=avgR(id);const n=a>=84?5:a>=79?4:a>=74?3:a>=69?2:1;return "★".repeat(n)+"☆".repeat(5-n);}
+function mast(){return `<div class="mast"><h1>Gaffer <span class="tick">'26</span></h1><div class="sub">FIFA World Cup 2026 · USA / Canada / Mexico · 48 teams</div></div>`;}
+
+function render(){
+  if(UI.screen==="select")return renderSelect();
+  if(UI.screen==="hub")return renderHub();
+  if(UI.screen==="match")return renderMatchShell();
+  if(UI.screen==="over")return renderOver();
+}
+
+/* ----- team select ----- */
+function renderSelect(){
+  let g="";
+  for(const k in GROUPS){
+    g+=`<div class="gcard"><h3>Group ${k}</h3>`+GROUPS[k].map(id=>
+      `<button class="team-row" onclick="startGame('${id}')"><span class="flag">${TEAMS[id].f}</span>${esc(TEAMS[id].n)}<span class="stars">${stars(id)}</span></button>`).join("")+`</div>`;
+  }
+  app.innerHTML=mast()+`
+  <p class="lede">Pick a nation and take it from the real 2026 group draw all the way to the final at MetLife on July 19. Set your XI, pick a shape, make your subs, survive the new Round of 32. One save, no second chances — just like a real tournament.</p>
+  <div class="groups-grid">${g}</div>
+  <p class="footnote">Groups reflect the real FIFA World Cup 2026 final draw. Squads are representative 18-man selections based on each nation's regular internationals as of June 2026 — not the official 26-man lists — and ratings are editorial estimates. Knockout seeding is simplified versus FIFA's official bracket. Progress lives in this browser tab only.</p>`;
+}
+function startGame(id){newGame(id);UI.screen="hub";UI.tab="overview";render();}
+
+/* ----- hub ----- */
+function stageLabel(){
+  if(G.stage<=2)return "Group "+groupOf(G.me)+" · Matchday "+(G.stage+1);
+  return ["","","","Round of 32","Round of 16","Quarter-final","Semi-final","Final"][G.stage];
+}
+function myNextFixture(){
+  if(!G.alive)return null;
+  if(G.stage<=2){
+    const fx=groupFixtures(groupOf(G.me),G.stage);
+    return fx.find(f=>f.includes(G.me));
+  }
+  const r=["R32","R16","QF","SF","F"][G.stage-3];
+  if(G.stage===7 && G.thirdMatch && !G.thirdMatch.res) {const t=G.thirdMatch; return [t.h,t.a];}
+  const tie=G.bracket&&G.bracket[r]&&G.bracket[r].find(t=>(t.h===G.me||t.a===G.me)&&!t.res);
+  return tie?[tie.h,tie.a]:null;
+}
+function renderHub(){
+  const t=TEAMS[G.me], fx=myNextFixture();
+  const opp=fx?(fx[0]===G.me?fx[1]:fx[0]):null;
+  const tabs=["overview","squad","tactics","groups","bracket","scorers"];
+  const tabNames={overview:"Dugout",squad:"Squad",tactics:"Tactics",groups:"Groups",bracket:"Bracket",scorers:"Golden Boot"};
+  app.innerHTML=mast()+`
+  <div class="hubhead">
+    <span class="flag">${t.f}</span>
+    <div><div class="tname">${esc(t.n)}</div><div class="meta">${G.alive?stageLabel():"Eliminated"} · World Cup 2026</div></div>
+    <div class="next"><div class="lbl">${G.alive&&fx?"Next match":"Status"}</div>
+    <div class="fix">${G.alive&&fx?TEAMS[fx[0]].f+" "+esc(TEAMS[fx[0]].n)+" v "+esc(TEAMS[fx[1]].n)+" "+TEAMS[fx[1]].f:(G.champion===G.me?"World champions!":"Out of the tournament")}</div>
+    ${G.alive&&fx?`<button class="btn primary" style="margin-top:8px" onclick="goMatch()">Play match</button>`:""}
+    </div>
+  </div>
+  <div class="tabs">${tabs.map(x=>`<button class="tab ${UI.tab===x?"on":""}" onclick="UI.tab='${x}';render()">${tabNames[x]}</button>`).join("")}</div>
+  <div id="tabbody"></div>
+  <p class="footnote">Representative squads & editorial ratings — not the official FIFA 26-man lists. Simplified knockout seeding. Built as a one-file game; closing the tab ends the save.</p>`;
+  const b=document.getElementById("tabbody");
+  if(UI.tab==="overview")b.innerHTML=tabOverview();
+  if(UI.tab==="squad")b.innerHTML=tabSquad();
+  if(UI.tab==="tactics")b.innerHTML=tabTactics();
+  if(UI.tab==="groups")b.innerHTML=tabGroups();
+  if(UI.tab==="bracket")b.innerHTML=tabBracket();
+  if(UI.tab==="scorers")b.innerHTML=tabScorers();
+}
+function tabOverview(){
+  const mine=teamPlayers(G.me);
+  const fit=mine.filter(available).length;
+  const form=G.formation, played=mine.reduce((s,p)=>s+p.goals,0);
+  return `<div class="kpis">
+    <div class="kpi"><div class="v">${fit}/18</div><div class="k">Players available</div></div>
+    <div class="kpi"><div class="v">${form}</div><div class="k">Shape</div></div>
+    <div class="kpi"><div class="v">${MENT[G.mentality].nm}</div><div class="k">Mentality</div></div>
+    <div class="kpi"><div class="v">${played}</div><div class="k">Goals scored</div></div>
+  </div>
+  <div class="panel"><h3>Team news</h3>${G.news.slice(0,12).map(n=>`<div class="news-item"><div class="d">${esc(n.d)}</div>${esc(n.txt)}</div>`).join("")||"No news yet."}</div>`;
+}
+function statusBadge(p){
+  let s="";
+  if(p.injured)s+=`<span class="badge inj">INJ ${p.injured}</span>`;
+  if(p.banned)s+=`<span class="badge sus">BAN ${p.banned}</span>`;
+  if(p.yc===1)s+=`<span class="badge sus" title="one booking from suspension">YC</span>`;
+  return s;
+}
+function tabSquad(){
+  const mine=teamPlayers(G.me).sort((a,b)=>"GDMF".indexOf(a.pos)-"GDMF".indexOf(b.pos)||b.r-a.r);
+  return `<div class="panel"><h3>Squad — ${esc(TEAMS[G.me].n)}</h3><table>
+  <tr><th>Player</th><th>Pos</th><th class="num">Rating</th><th>Fitness</th><th class="num">Apps</th><th class="num">Goals</th><th></th></tr>
+  ${mine.map(p=>`<tr><td>${esc(p.n)}${G.xi.includes(p.id)?'<span class="badge cap">XI</span>':""}</td>
+    <td class="pos-${p.pos}">${p.pos}</td><td class="num">${p.r}</td>
+    <td><span class="cond-bar"><i style="width:${p.cond}%;${p.cond<55?"background:var(--red)":p.cond<75?"background:var(--yellow)":""}"></i></span> <span class="mono" style="font-size:11px">${Math.round(p.cond)}%</span></td>
+    <td class="num">${p.apps}</td><td class="num">${p.goals}</td><td>${statusBadge(p)}</td></tr>`).join("")}
+  </table></div>`;
+}
+function tabTactics(){
+  setTimeout(drawPitch,0);
+  return `<div class="selects">
+    <select onchange="changeFormation(this.value)">${Object.keys(FORMATIONS).map(f=>`<option ${f===G.formation?"selected":""}>${f}</option>`).join("")}</select>
+    <select onchange="G.mentality=this.value;render()"><option value="def" ${G.mentality==="def"?"selected":""}>Defensive</option><option value="bal" ${G.mentality==="bal"?"selected":""}>Balanced</option><option value="atk" ${G.mentality==="atk"?"selected":""}>Attacking</option></select>
+    <button class="btn sm" onclick="G.xi=autoXI(G.me,G.formation);UI.selXi=null;render()">Auto-pick XI</button>
+  </div>
+  <div class="tactics-wrap">
+    <div class="pitch" id="pitch"><div class="half"></div><div class="circle"></div></div>
+    <div class="panel" style="margin:0"><h3>Bench & reserves</h3><div style="font-size:12px;color:var(--chalk-dim);margin-bottom:8px">Tap a shirt on the pitch, then a player here, to swap them in. Out-of-position picks take a rating hit.</div><div class="bench-list" id="bench"></div></div>
+  </div>`;
+}
+function changeFormation(f){G.formation=f;G.xi=autoXI(G.me,f);UI.selXi=null;render();}
+function drawPitch(){
+  const pitch=document.getElementById("pitch"),bench=document.getElementById("bench");
+  if(!pitch)return;
+  const F=FORMATIONS[G.formation];
+  pitch.querySelectorAll(".chip").forEach(c=>c.remove());
+  G.xi.forEach((pid,i)=>{
+    const [x,y]=F.xy[i];
+    const c=document.createElement("button");c.className="chip"+(UI.selXi===i?" sel":"");
+    const p=pid?G.players[pid]:null;
+    if(p&&p.cond<55)c.classList.add("low");
+    c.style.left=x+"%";c.style.top=y+"%";
+    c.innerHTML=`<span class="dot">${p?Math.round(eff(p,F.slots[i])):"—"}</span><span class="nm">${p?esc(shortName(p.n)):F.slots[i]}</span>`;
+    c.onclick=()=>{UI.selXi=UI.selXi===i?null:i;drawPitch();};
+    pitch.appendChild(c);
+  });
+  const inXi=new Set(G.xi);
+  const pool=teamPlayers(G.me).filter(p=>!inXi.has(p.id)).sort((a,b)=>"GDMF".indexOf(a.pos)-"GDMF".indexOf(b.pos)||b.r-a.r);
+  bench.innerHTML=pool.map(p=>`<button class="bench-row" ${!available(p)?"disabled style='opacity:.4'":""} onclick="benchPick('${p.id}')"><span class="pos-${p.pos} mono" style="width:16px">${p.pos}</span>${esc(p.n)}${statusBadge(p)}<span class="r">${p.r} · ${Math.round(p.cond)}%</span></button>`).join("");
+}
+function shortName(n){const parts=n.split(" ");return parts.length>1?parts.slice(1).join(" "):n;}
+function benchPick(pid){
+  if(UI.selXi===null)return;
+  const p=G.players[pid]; if(!available(p))return;
+  const slot=FORMATIONS[G.formation].slots[UI.selXi];
+  if((slot==="G")!==(p.pos==="G"))return;
+  G.xi[UI.selXi]=pid;UI.selXi=null;drawPitch();
+}
+function tabGroups(){
+  let h="";
+  for(const g in GROUPS){
+    const o=sortGroup(g);
+    h+=`<div class="panel"><h3>Group ${g}</h3><table><tr><th></th><th>Team</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GD</th><th class="num">Pts</th></tr>
+    ${o.map((id,i)=>{const s=G.standings[id];return `<tr class="${id===G.me?"me":""} ${i<2?"qual":""}"><td class="num">${i+1}</td><td>${TEAMS[id].f} ${esc(TEAMS[id].n)}</td><td class="num">${s.p}</td><td class="num">${s.w}</td><td class="num">${s.d}</td><td class="num">${s.l}</td><td class="num">${s.gf-s.ga>0?"+":""}${s.gf-s.ga}</td><td class="num"><b>${s.pts}</b></td></tr>`;}).join("")}
+    </table></div>`;
+  }
+  return `<p style="color:var(--chalk-dim);font-size:13px;margin-bottom:12px">Top two qualify automatically; the eight best third-placed teams also reach the Round of 32.</p><div class="groups-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${h}</div>`;
+}
+function tieHTML(t,roundDone){
+  if(!t)return "";
+  const w=t.res?winner(t.res):null;
+  const cls=(t.h===G.me||t.a===G.me)?"tie metie":"tie";
+  const row=(id,sc,isW)=>`<div class="tm ${t.res?(isW?"win":"lose"):""}"><span>${TEAMS[id].f}</span><span>${esc(TEAMS[id].n)}</span><span class="sc">${sc}</span></div>`;
+  const hsc=t.res?t.res.hs+(t.res.pens?" ("+t.res.pens.h+")":""):"";
+  const asc=t.res?t.res.as+(t.res.pens?" ("+t.res.pens.a+")":""):"";
+  return `<div class="${cls}">${row(t.h,hsc,w===t.h)}${row(t.a,asc,w===t.a)}</div>`;
+}
+function tabBracket(){
+  if(!G.bracket)return `<div class="panel"><h3>Knockout bracket</h3><p style="color:var(--chalk-dim)">The bracket forms once the group stage is complete. 32 teams make it: 12 winners, 12 runners-up and the 8 best third-placed sides.</p></div>`;
+  const B=G.bracket;
+  const col=(nm,arr)=>`<div class="round"><h4>${nm}</h4>${arr.map(t=>tieHTML(t)).join("")||'<div style="color:var(--chalk-dim);font-size:12px">TBD</div>'}</div>`;
+  return `<div class="bracket">${col("Round of 32",B.R32)}${col("Round of 16",B.R16)}${col("Quarter-finals",B.QF)}${col("Semi-finals",B.SF)}${col("Final",B.F)}${B.TP.length?col("Third place",B.TP):""}</div>
+  ${G.champion?`<div class="panel" style="margin-top:14px;text-align:center"><h3 style="margin-bottom:4px">🏆 ${TEAMS[G.champion].f} ${esc(TEAMS[G.champion].n)} are world champions</h3></div>`:""}`;
+}
+function tabScorers(){
+  const top=Object.values(G.players).filter(p=>p.goals>0).sort((a,b)=>b.goals-a.goals||b.r-a.r).slice(0,15);
+  return `<div class="panel"><h3>Golden Boot race</h3>${top.length?`<table><tr><th>Player</th><th>Nation</th><th class="num">Goals</th></tr>${top.map(p=>`<tr ${p.team===G.me?'class="me"':""}><td>${esc(p.n)}</td><td>${TEAMS[p.team].f} ${esc(TEAMS[p.team].n)}</td><td class="num"><b>${p.goals}</b></td></tr>`).join("")}</table>`:"No goals yet — the tournament is young."}</div>`;
+}
+
+/* ---------------- match day ---------------- */
+function validateXI(){
+  /* auto-replace unavailable players before kickoff */
+  const F=FORMATIONS[G.formation];
+  let changed=[];
+  G.xi.forEach((pid,i)=>{
+    const p=pid?G.players[pid]:null;
+    if(!p||!available(p)){
+      const inXi=new Set(G.xi);
+      const slot=F.slots[i];
+      const cand=teamPlayers(G.me).filter(q=>available(q)&&!inXi.has(q.id)&&((slot==="G")===(q.pos==="G")))
+        .sort((a,b)=>eff(b,slot)+(b.pos===slot?4:0)-eff(a,slot)-(a.pos===slot?4:0))[0];
+      if(cand){G.xi[i]=cand.id;if(p)changed.push(p.n+" → "+cand.n);}
+    }
+  });
+  if(changed.length)pushNews("Enforced changes","Unavailable players replaced: "+changed.join(", ")+".");
+}
+function goMatch(){
+  validateXI();
+  const fx=myNextFixture(); if(!fx)return;
+  const iAmHome=fx[0]===G.me;
+  const mySet={ids:[...G.xi],form:G.formation};
+  const knockout=G.stage>=3;
+  const opts=knockout?{knockout:true}:{};
+  if(iAmHome){opts.hSet=mySet;opts.hMent=MENT[G.mentality];}
+  else{opts.aSet=mySet;opts.aMent=MENT[G.mentality];}
+  UI.match=simMatch(fx[0],fx[1],opts);
+  UI.match.iAmHome=iAmHome;
+  UI.subUsed=new Set(G.xi);
+  UI.paused=true;UI.started=false;UI.speed=140;UI.selXi=null;UI.subMode=false;
+  UI.screen="match";render();
+}
+function mySet(){return UI.match.iAmHome?UI.match.hSet:UI.match.aSet;}
+function renderMatchShell(){
+  const m=UI.match,h=TEAMS[m.h],a=TEAMS[m.a];
+  app.innerHTML=mast()+`
+  <div class="scoreboard">
+    <div class="side"><span class="flag">${h.f}</span><span class="nm">${esc(h.n)}</span></div>
+    <div><div class="scoreline" id="sc">${m.hs} – ${m.as}</div><div class="clockrow" id="clock">${UI.started?m.min+"'":stageLabel().toUpperCase()}</div></div>
+    <div class="side away"><span class="nm">${esc(a.n)}</span><span class="flag">${a.f}</span></div>
+  </div>
+  <div class="momentum"><div class="h" id="momh" style="width:50%"></div><div class="a" id="moma" style="width:50%"></div></div>
+  <div class="matchctl" id="ctl"></div>
+  <div id="subpanel"></div>
+  <div class="feed" id="feed"></div>
+  <div class="statgrid" id="stats"></div>
+  <div class="othergames" id="others"></div>`;
+  renderCtl();updateStats();
+  feedMsg({t:"info",min:0,txt:UI.match.knockout?"Knockout football — win or go home. Extra time and penalties if needed.":"Three points up for grabs. Good luck, gaffer."});
+}
+function renderCtl(){
+  const c=document.getElementById("ctl");if(!c)return;
+  const m=UI.match;
+  if(m.done){
+    c.innerHTML=`<button class="btn primary" onclick="afterMyMatch()">Continue</button>`;
+    return;
+  }
+  c.innerHTML=`
+   ${!UI.started?`<button class="btn primary" onclick="startSim()">Kick off</button>`:
+     UI.paused?`<button class="btn primary" onclick="resumeSim()">${m.min===45?"Start second half":"Resume"}</button>`:
+     `<button class="btn" onclick="pauseSim()">Pause</button>`}
+   <button class="btn sm ${UI.speed===140?"gold":""}" onclick="setSpeed(140)">1×</button>
+   <button class="btn sm ${UI.speed===60?"gold":""}" onclick="setSpeed(60)">2×</button>
+   <button class="btn sm ${UI.speed===22?"gold":""}" onclick="setSpeed(22)">4×</button>
+   ${UI.started?`<button class="btn sm" ${UI.paused?"":"disabled"} onclick="toggleSubs()">Changes (${5-m.subs[UI.match.iAmHome?"h":"a"]} subs left)</button>
+   <select onchange="myMentSet(this.value)" ${UI.paused?"":"disabled"}>
+     <option value="def" ${G.mentality==="def"?"selected":""}>Defensive</option>
+     <option value="bal" ${G.mentality==="bal"?"selected":""}>Balanced</option>
+     <option value="atk" ${G.mentality==="atk"?"selected":""}>Attacking</option></select>`:""}`;
+}
+function myMentSet(v){G.mentality=v;const M=MENT[v];if(UI.match.iAmHome)UI.match.hM=M;else UI.match.aM=M;feedMsg({t:"info",min:UI.match.min,txt:"Mentality switched to "+M.nm+"."});}
+function setSpeed(s){UI.speed=s;if(!UI.paused&&UI.started){clearInterval(UI.timer);UI.timer=setInterval(tick,UI.speed);}renderCtl();}
+function startSim(){UI.started=true;resumeSim();}
+function resumeSim(){UI.paused=false;UI.subMode=false;document.getElementById("subpanel").innerHTML="";clearInterval(UI.timer);UI.timer=setInterval(tick,UI.speed);renderCtl();}
+function pauseSim(){UI.paused=true;clearInterval(UI.timer);renderCtl();}
+function tick(){
+  const m=UI.match;
+  const evs=m.step();
+  (evs||[]).forEach(feedMsg);
+  document.getElementById("sc").textContent=m.hs+" – "+m.as+(m.pens?"  ("+m.pens.h+"–"+m.pens.a+" pens)":"");
+  document.getElementById("clock").textContent=m.min+"'"+(m.et?" AET":"");
+  document.getElementById("momh").style.width=m.mom+"%";
+  document.getElementById("moma").style.width=(100-m.mom)+"%";
+  updateStats();
+  if(m.min===45&&!m.done){pauseSim();}
+  if(m.done){clearInterval(UI.timer);finishMatch(m);renderCtl();}
+}
+function updateStats(){
+  const m=UI.match,s=document.getElementById("stats");if(!s)return;
+  s.innerHTML=`<div class="l">${m.shots.h}</div><div class="c">Shots</div><div>${m.shots.a}</div>
+  <div class="l">${m.sot.h}</div><div class="c">On target</div><div>${m.sot.a}</div>`;
+}
+function feedMsg(ev){
+  const f=document.getElementById("feed");if(!f)return;
+  const d=document.createElement("div");d.className="ev "+(ev.t||"");
+  d.innerHTML=`<span class="min">${ev.min}'</span><span>${esc(ev.txt)}</span>`;
+  f.prepend(d);
+}
+function toggleSubs(){
+  UI.subMode=!UI.subMode;UI.selXi=null;
+  renderSubPanel();
+}
+function renderSubPanel(){
+  const sp=document.getElementById("subpanel");if(!sp)return;
+  if(!UI.subMode){sp.innerHTML="";return;}
+  const m=UI.match,set=mySet(),F=FORMATIONS[set.form];
+  const sideKey=m.iAmHome?"h":"a";
+  if(m.subs[sideKey]>=5){sp.innerHTML=`<div class="panel">No substitutions left.</div>`;return;}
+  const onPitch=set.ids.map((pid,i)=>pid?`<button class="bench-row ${UI.selXi===i?"sel":""}" onclick="pickOff(${i})"><span class="mono pos-${F.slots[i]}" style="width:16px">${F.slots[i]}</span>${esc(G.players[pid].n)}<span class="r">${Math.round(G.players[pid].cond)}%</span></button>`:"").join("");
+  const inUse=new Set([...UI.subUsed,...set.ids.filter(Boolean)]);
+  const bench=teamPlayers(G.me).filter(p=>available(p)&&!inUse.has(p.id))
+    .map(p=>`<button class="bench-row" onclick="pickOn('${p.id}')"><span class="mono pos-${p.pos}" style="width:16px">${p.pos}</span>${esc(p.n)}<span class="r">${p.r} · ${Math.round(p.cond)}%</span></button>`).join("");
+  sp.innerHTML=`<div class="panel"><h3>Make a change</h3><p style="font-size:12px;color:var(--chalk-dim);margin:0 0 8px">${UI.selXi===null?"Pick who comes off, then who comes on.":"Now pick a replacement."}</p><div class="tactics-wrap"><div><div style="font-size:11px;color:var(--chalk-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Coming off</div>${onPitch}</div><div><div style="font-size:11px;color:var(--chalk-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Coming on</div><div class="bench-list" style="max-height:260px">${bench||"Nobody fit on the bench."}</div></div></div></div>`;
+}
+function pickOff(i){UI.selXi=i;renderSubPanel();}
+function pickOn(pid){
+  if(UI.selXi===null)return;
+  const m=UI.match,set=mySet(),F=FORMATIONS[set.form];
+  const slot=F.slots[UI.selXi];
+  const p=G.players[pid];
+  if((slot==="G")!==(p.pos==="G")){feedMsg({t:"info",min:m.min,txt:"You can only swap a goalkeeper for a goalkeeper."});return;}
+  const off=set.ids[UI.selXi];
+  set.ids[UI.selXi]=pid;UI.subUsed.add(pid);
+  m.subs[m.iAmHome?"h":"a"]++;
+  p.apps++;
+  feedMsg({t:"info",min:m.min,txt:"Substitution: "+p.n+" replaces "+(off?G.players[off].n:"the gap in the line-up")+"."});
+  UI.selXi=null;UI.subMode=false;document.getElementById("subpanel").innerHTML="";renderCtl();
+}
+
+/* ---------------- tournament progression ---------------- */
+function afterMyMatch(){
+  const m=UI.match;
+  UI.screen="hub";UI.tab="overview";
+  const others=[];
+  if(G.stage<=2){
+    applyResult(m.h,m.a,m.hs,m.as);
+    for(const g in GROUPS){
+      for(const [h,a] of groupFixtures(g,G.stage)){
+        if(h===m.h&&a===m.a)continue;
+        const r=runFull(simMatch(h,a));
+        applyResult(h,a,r.hs,r.as);
+        others.push(r);
+      }
+    }
+    G.results["md"+G.stage]=[m,...others];
+    pushNews("Matchday "+(G.stage+1)+" — Group "+groupOf(G.me),resultText(m));
+    endOfRoundHousekeeping();
+    G.stage++;
+    if(G.stage===3)settleGroups();
+  } else {
+    settleKnockoutRound(m);
+  }
+  render();
+}
+function resultText(r){return TEAMS[r.h].n+" "+r.hs+(r.pens?" ("+r.pens.h+")":"")+" – "+r.as+(r.pens?" ("+r.pens.a+")":"")+" "+TEAMS[r.a].n;}
+function endOfRoundHousekeeping(){
+  Object.values(G.players).forEach(p=>{
+    if(p._fresh){delete p._fresh;return;}
+    if(p.banned>0)p.banned--;
+    if(p.injured>0)p.injured--;
+  });
+  recover();
+}
+function settleGroups(){
+  G.bracket=buildBracket();
+  const inB=new Set(G.bracket.R32.flatMap(t=>[t.h,t.a]));
+  if(!inB.has(G.me)){
+    G.alive=false;
+    const pos=sortGroup(groupOf(G.me)).indexOf(G.me)+1;
+    pushNews("Group stage over","You finished "+pos+ordinal(pos)+" in Group "+groupOf(G.me)+" — not enough to reach the Round of 32.");
+    UI.screen="over";return;
+  }
+  pushNews("Knockout draw","You're through to the Round of 32. "+r32OppText());
+}
+function r32OppText(){const t=G.bracket.R32.find(t=>t.h===G.me||t.a===G.me);const o=t.h===G.me?t.a:t.h;return "You'll face "+TEAMS[o].n+".";}
+function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th";}
+function roundKey(){return ["R32","R16","QF","SF","F"][G.stage-3];}
+function settleKnockoutRound(myResult){
+  const key=roundKey(), ties=G.bracket&&G.bracket[key];
+  if(!ties||!ties.length){UI.screen="over";return;}
+  /* third-place match handling */
+  if(G.stage===7&&G.thirdMatch&&!G.thirdMatch.res&&(myResult.h===G.thirdMatch.h)){
+    G.thirdMatch.res=myResult;
+    pushNews("Third-place play-off",resultText(myResult));
+    finishTournamentSim();
+    G.alive=false;UI.screen="over";return;
+  }
+  for(const t of ties){
+    if(!t.res){
+      if((t.h===myResult.h&&t.a===myResult.a)) t.res=myResult;
+      else t.res=runFull(simMatch(t.h,t.a,{knockout:true}));
+    }
+  }
+  pushNews(["Round of 32","Round of 16","Quarter-finals","Semi-finals","Final"][G.stage-3],resultText(myResult));
+  const winners=ties.map(winner);
+  endOfRoundHousekeeping();
+  const iWon=winners.includes(G.me);
+  if(key==="F"){
+    G.champion=winners[0];
+    if(iWon){G.alive=true;UI.screen="over";return;}
+  }
+  if(!iWon&&key!=="F"){
+    G.alive=false;
+    if(key==="SF"){
+      const loser=myResult.h===G.me||myResult.a===G.me?(winner(myResult)===myResult.h?myResult.a:myResult.h):null;
+      const otherLoser=ties.map(t=>winner(t)===t.h?t.a:t.h).find(x=>x!==loser);
+      G.thirdMatch={h:loser,a:otherLoser,res:null};
+      G.alive=true; /* one more match to play */
+      pushNews("Semi-final heartbreak","So close. The third-place play-off against "+TEAMS[otherLoser].n+" is your final match.");
+      G.stage=7;nextRoundTies(winners,key);UI.screen="hub";render();return;
+    }
+    pushNews("Knocked out","Your World Cup ends here.");
+    nextRoundTies(winners,key);
+    finishTournamentSim();
+    UI.screen="over";return;
+  }
+  nextRoundTies(winners,key);
+  G.stage++;
+  if(key==="F")UI.screen="over";
+}
+function nextRoundTies(winners,key){
+  const nextKey={R32:"R16",R16:"QF",QF:"SF",SF:"F"}[key];
+  if(!nextKey)return;
+  const next=[];
+  for(let i=0;i<winners.length;i+=2)next.push({h:winners[i],a:winners[i+1],res:null});
+  G.bracket[nextKey]=next;
+}
+function finishTournamentSim(){
+  /* simulate any remaining rounds so the bracket completes */
+  if(!G.bracket){G.bracket=buildBracket();}
+  const order=["R32","R16","QF","SF","F"];
+  for(const k of order){
+    const ties=G.bracket[k];
+    if(!ties||!ties.length){ if(k==="R16"||k==="QF"||k==="SF"||k==="F"){const prev=order[order.indexOf(k)-1];const w=G.bracket[prev].map(winner);nextRoundTies(w,prev);} }
+    for(const t of G.bracket[k]){ if(!t.res)t.res=runFull(simMatch(t.h,t.a,{knockout:true})); }
+  }
+  const f=G.bracket.F[0];
+  G.champion=winner(f);
+  if(G.thirdMatch&&!G.thirdMatch.res)G.thirdMatch.res=runFull(simMatch(G.thirdMatch.h,G.thirdMatch.a,{knockout:true}));
+  if(G.thirdMatch)G.bracket.TP=[G.thirdMatch];
+}
+function renderOver(){
+  const won=G.champion===G.me;
+  if(!G.champion&&!G.alive)finishTournamentSim();
+  const champ=G.champion;
+  app.innerHTML=mast()+`<div class="bigmoment">
+    <div class="tr">${won?"🏆":"📋"}</div>
+    <h2>${won?TEAMS[G.me].n+" are champions of the world":"Your tournament is over"}</h2>
+    <p>${won?"July 19, MetLife Stadium. "+TEAMS[G.me].n+" lift the 2026 World Cup. They'll sing about this one for generations — and it was your team sheet that did it.":
+      (champ?TEAMS[champ].f+" "+TEAMS[champ].n+" went on to lift the trophy. Different shape next time, gaffer?":"")}</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" onclick="UI.screen='hub';UI.tab='bracket';render()">View final bracket</button>
+      <button class="btn" onclick="UI.screen='hub';UI.tab='scorers';render()">Golden Boot</button>
+      <button class="btn primary" onclick="UI.screen='select';render()">Start a new save</button>
+    </div></div>`;
+}
+
+render();
+</script>
+</body>
+</html>
