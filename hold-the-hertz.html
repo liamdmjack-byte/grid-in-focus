@@ -743,7 +743,7 @@ function endGame(survived){
     $('tipsBtn').classList.add('hidden');
   }
   let grade;
-  if(!survived) grade = '⚫ Lights out — see you at the inquiry';
+  if(!survived) grade = '⚫ Lights out — better luck next time';
   else if(pct>=92 && S.peakDev<=0.25) grade='🏆 System Operator of the Year';
   else if(pct>=80) grade='🟢 Seasoned control engineer';
   else if(pct>=60) grade='🟡 Probationary dispatcher';
