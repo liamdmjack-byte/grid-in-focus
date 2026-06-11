@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hold the Hertz — Control Room Panic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter+Tight:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --console:#0b1015;
+  --panel:#121a22;
+  --panel-edge:#1e2a36;
+  --phosphor:#ffb454;
+  --healthy:#3ddc84;
+  --alarm:#ff4d5e;
+  --demand:#4dc3ff;
+  --ink:#e8eef4;
+  --dim:#8298ab;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter Tight',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior-y:contain}
+body{
+  background:var(--console);
+  color:var(--ink);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  touch-action:manipulation;
+  background-image:
+    radial-gradient(ellipse at 50% -20%, #16222e 0%, transparent 55%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
+}
+@media(hover:none){.a-key{display:none}.howto .k{display:none}}
+button{user-select:none;-webkit-user-select:none}
+.wrap{max-width:1080px;margin:0 auto;padding:14px 16px 28px}
+
+/* ---------- header ---------- */
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--panel-edge);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap}
+.brand h1{font-family:var(--mono);font-weight:800;font-size:clamp(20px,3.4vw,30px);letter-spacing:.04em;color:var(--phosphor);text-shadow:0 0 18px rgba(255,180,84,.35)}
+.brand p{font-size:12px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.hud{display:flex;gap:18px;font-family:var(--mono)}
+.hud .stat{text-align:right}
+.hud .label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em}
+.hud .val{font-size:22px;font-weight:800;line-height:1.1}
+#combo.hot{color:var(--phosphor);text-shadow:0 0 12px rgba(255,180,84,.5)}
+
+/* ---------- layout ---------- */
+.game{display:grid;grid-template-columns:1fr 290px;grid-template-areas:"dial tickets" "assets assets";gap:12px}
+#dialPanel{grid-area:dial}
+#ticketPanel{grid-area:tickets}
+.assets{grid-area:assets;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:860px){
+  .game{grid-template-columns:1fr;grid-template-areas:"dial" "assets" "tickets"}
+  .assets{grid-template-columns:repeat(2,1fr);gap:8px}
+  .wrap{padding:10px 10px 22px}
+  #dial{width:min(100%,360px)}
+  .meters{grid-template-columns:1fr;gap:8px}
+  .meter .a-note{display:none}
+  #tickets{min-height:80px;max-height:230px}
+  .panel{padding:11px}
+  .hud{gap:12px}
+  .hud .val{font-size:18px}
+}
+
+.panel{background:var(--panel);border:1px solid var(--panel-edge);border-radius:10px;padding:14px;position:relative}
+.panel h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+
+#pauseBtn{font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:.06em;padding:8px 12px;border-radius:8px;border:1px solid var(--panel-edge);background:#1a2530;color:var(--phosphor);cursor:pointer;align-self:center;touch-action:manipulation}
+#pauseBtn:active{transform:scale(.95)}
+
+/* ---------- dial ---------- */
+.dial-wrap{display:flex;flex-direction:column;align-items:center}
+#dial{width:min(100%,480px)}
+.freq-readout{font-family:var(--mono);font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:.02em;margin-top:-8px;transition:color .15s}
+.freq-readout small{font-size:.45em;color:var(--dim);font-weight:600}
+.f-green{color:var(--healthy);text-shadow:0 0 16px rgba(61,220,132,.4)}
+.f-amber{color:var(--phosphor);text-shadow:0 0 16px rgba(255,180,84,.4)}
+.f-red{color:var(--alarm);text-shadow:0 0 16px rgba(255,77,94,.5);animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:12px}
+.meter .label{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;display:flex;justify-content:space-between;margin-bottom:4px}
+.bar{height:10px;background:#0a0f14;border:1px solid var(--panel-edge);border-radius:5px;overflow:hidden;position:relative}
+.bar>i{display:block;height:100%;border-radius:4px;transition:width .15s linear, background .2s}
+#inertiaBar>i{background:linear-gradient(90deg,#3ddc84,#ffb454)}
+#imbalBar{position:relative}
+#imbalBar>i{position:absolute;top:0;height:100%}
+#imbalBar .zero{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--dim)}
+
+/* ---------- tickets ---------- */
+#tickets{display:flex;flex-direction:column;gap:8px;min-height:260px;max-height:430px;overflow-y:auto}
+.ticket{background:#0d141b;border:1px solid var(--panel-edge);border-left:4px solid var(--dim);border-radius:8px;padding:9px 10px;animation:slidein .25s ease-out;font-size:13px}
+@keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.ticket .t-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ticket .t-name{font-weight:700}
+.ticket .t-mw{font-family:var(--mono);font-weight:800;font-size:13px}
+.ticket .t-sub{font-size:11px;color:var(--dim);margin-top:2px}
+.ticket .t-bar{height:4px;background:#0a0f14;border-radius:2px;margin-top:7px;overflow:hidden}
+.ticket .t-bar>i{display:block;height:100%;background:var(--dim)}
+.ticket.down{border-left-color:var(--alarm)} .ticket.down .t-mw{color:var(--alarm)}
+.ticket.up{border-left-color:var(--demand)} .ticket.up .t-mw{color:var(--demand)}
+.ticket.active{background:#15202b}
+.ticket.active .t-bar>i{background:var(--phosphor)}
+.ticket.warning .t-bar>i{background:var(--alarm)}
+.empty-note{color:var(--dim);font-size:12px;font-style:italic;padding:8px 2px}
+
+/* ---------- assets ---------- */
+.asset{background:var(--panel);border:1px solid var(--panel-edge);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:7px}
+.asset .a-head{display:flex;justify-content:space-between;align-items:baseline}
+.asset .a-name{font-weight:700;font-size:13px}
+.asset .a-key{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.asset .a-out{font-family:var(--mono);font-weight:800;font-size:19px}
+.asset .a-out small{font-size:.55em;color:var(--dim)}
+.asset .a-bar{height:7px;background:#0a0f14;border:1px solid var(--panel-edge);border-radius:4px;overflow:hidden;position:relative}
+.asset .a-bar>i{position:absolute;top:0;height:100%;background:var(--healthy)}
+.asset .a-bar .zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--dim);z-index:2}
+.asset .a-btns{display:flex;gap:6px}
+.asset button{flex:1;font-family:var(--mono);font-weight:800;font-size:16px;min-height:44px;padding:9px 0;border-radius:7px;border:1px solid var(--panel-edge);background:#1a2530;color:var(--ink);cursor:pointer;touch-action:manipulation;user-select:none;transition:transform .05s, background .1s}
+.asset button:active{transform:scale(.94);background:#243341}
+.asset button:disabled{opacity:.35;cursor:not-allowed}
+.asset .a-note{font-size:10px;color:var(--dim);line-height:1.35}
+#dsrBtn{background:#2a2014;border-color:#4a3a1e;color:var(--phosphor)}
+#dsrBtn:active{background:#3a2c18}
+.asset.flash{animation:assetflash .4s}
+@keyframes assetflash{0%{box-shadow:0 0 0 2px var(--phosphor)}100%{box-shadow:none}}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;background:rgba(5,8,11,.9);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay .card{background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;max-width:560px;width:100%;padding:26px;text-align:center}
+.overlay h2{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--phosphor);letter-spacing:.03em;margin-bottom:10px}
+.overlay h2.bad{color:var(--alarm)}
+.overlay p{color:var(--dim);font-size:14px;line-height:1.55;margin-bottom:10px}
+.overlay .big{font-family:var(--mono);font-size:40px;font-weight:800;color:var(--ink);margin:8px 0}
+.overlay .grade{font-family:var(--mono);font-size:15px;color:var(--healthy);margin-bottom:14px}
+.overlay button{font-family:var(--mono);font-weight:800;font-size:16px;padding:13px 30px;border-radius:9px;border:none;background:var(--phosphor);color:#1a1206;cursor:pointer;margin-top:8px}
+.overlay button:active{transform:scale(.96)}
+.howto{text-align:left;font-size:12.5px;color:var(--dim);background:#0d141b;border:1px solid var(--panel-edge);border-radius:8px;padding:12px 14px;margin:12px 0;line-height:1.6}
+.howto b{color:var(--ink)}
+.howto .k{font-family:var(--mono);background:#1a2530;border:1px solid var(--panel-edge);border-radius:4px;padding:0 5px;font-size:11px;color:var(--phosphor)}
+.hidden{display:none !important}
+
+/* difficulty picker */
+.diff-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px}
+@media(max-width:520px){.diff-row{grid-template-columns:1fr}}
+.overlay .diff-btn{font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:.04em;padding:11px 8px;border-radius:9px;border:1px solid var(--panel-edge);background:#10181f;color:var(--ink);cursor:pointer;line-height:1.3;margin-top:0}
+.overlay .diff-btn small{display:block;font-family:var(--sans);font-weight:400;font-size:10.5px;color:var(--dim);margin-top:5px;letter-spacing:0;text-transform:none}
+.overlay .diff-btn.sel{border-color:var(--phosphor);background:#241c10;box-shadow:0 0 0 1px var(--phosphor)}
+.overlay button.secondary{background:#1a2530;color:var(--ink);border:1px solid var(--panel-edge)}
+
+/* trip flash */
+body.tripping::after{content:'';position:fixed;inset:0;pointer-events:none;background:rgba(255,77,94,.07);animation:blink .4s steps(2) infinite;z-index:40}
+footer{margin-top:14px;font-size:11px;color:var(--dim);line-height:1.5;border-top:1px solid var(--panel-edge);padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>HOLD THE HERTZ</h1>
+      <p>GB control room · balance the system at 50.00 Hz</p>
+    </div>
+    <div class="hud">
+      <div class="stat"><div class="label">Shift</div><div class="val" id="clock">3:00</div></div>
+      <div class="stat"><div class="label">Combo</div><div class="val" id="combo">×1</div></div>
+      <div class="stat"><div class="label">Score</div><div class="val" id="score">0</div></div>
+      <button id="pauseBtn" class="hidden" aria-label="Pause">⏸ PAUSE</button>
+    </div>
+  </header>
+
+  <div class="game">
+    <div class="panel dial-wrap" id="dialPanel">
+      <h2>System frequency</h2>
+      <svg id="dial" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg" aria-label="Frequency dial"></svg>
+      <div class="freq-readout f-green"><span id="freqVal">50.000</span> <small>Hz</small></div>
+      <div class="meters">
+        <div class="meter">
+          <div class="label"><span>System inertia</span><span id="inertiaVal"></span></div>
+          <div class="bar" id="inertiaBar"><i style="width:100%"></i></div>
+          <div class="a-note" style="margin-top:4px">Falls as renewables displace spinning plant — swings get faster.</div>
+        </div>
+        <div class="meter">
+          <div class="label"><span>Imbalance</span><span id="imbalVal">0 MW</span></div>
+          <div class="bar" id="imbalBar"><span class="zero"></span><i></i></div>
+          <div class="a-note" style="margin-top:4px">Generation minus demand. Right = surplus, left = shortfall.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="ticketPanel">
+      <h2>Incoming events</h2>
+      <div id="tickets"><div class="empty-note">Quiet on the system… for now.</div></div>
+    </div>
+
+    <div class="assets">
+    <div class="asset" id="asset-gas">
+      <div class="a-head"><span class="a-name">⛽ Gas peaker</span><span class="a-key">Q / A</span></div>
+      <div class="a-out"><span id="gasOut">0</span> <small>MW</small></div>
+      <div class="a-bar"><i id="gasBar"></i></div>
+      <div class="a-btns"><button data-act="gas-">▼</button><button data-act="gas+">▲</button></div>
+      <div class="a-note">Big muscle, slow ramp. Setpoint <span id="gasSet">0</span> MW.</div>
+    </div>
+    <div class="asset" id="asset-batt">
+      <div class="a-head"><span class="a-name">🔋 Battery</span><span class="a-key">W / S</span></div>
+      <div class="a-out"><span id="battOut">0</span> <small>MW</small></div>
+      <div class="a-bar"><span class="zero"></span><i id="battBar"></i></div>
+      <div class="a-btns"><button data-act="batt-">▼</button><button data-act="batt+">▲</button></div>
+      <div class="a-note">Instant, but finite. Charge <span id="battSoc">100</span>%. Run negative to recharge.</div>
+    </div>
+    <div class="asset" id="asset-hydro">
+      <div class="a-head"><span class="a-name">💧 Pumped hydro</span><span class="a-key">E / D</span></div>
+      <div class="a-out"><span id="hydroOut">0</span> <small>MW</small></div>
+      <div class="a-bar"><span class="zero"></span><i id="hydroBar"></i></div>
+      <div class="a-btns"><button data-act="hydro-">▼</button><button data-act="hydro+">▲</button></div>
+      <div class="a-note">Fast both ways. Reservoir <span id="hydroRes">75</span>%. Pump (negative) to refill.</div>
+    </div>
+    <div class="asset" id="asset-dsr">
+      <div class="a-head"><span class="a-name">🏠 Demand flex</span><span class="a-key">F</span></div>
+      <div class="a-out"><span id="dsrOut">READY</span></div>
+      <div class="a-bar"><i id="dsrBar" style="width:100%;left:0"></i></div>
+      <div class="a-btns"><button id="dsrBtn" data-act="dsr">SHED 500 MW</button></div>
+      <div class="a-note">Pays homes &amp; factories to back off for 8 s. Then a cooldown.</div>
+    </div>
+  </div>
+  </div>
+
+  <footer>
+    Loosely real: GB statutory limits are ±0.2 Hz around 50 Hz; drift much past ±0.8 Hz and automatic low-frequency demand disconnection starts shedding load — the Aug 2019 blackout began with a frequency fall to 48.8 Hz. Inertia really is falling as renewables grow, which is why batteries now win frequency-response contracts.
+  </footer>
+</div>
+
+<!-- start overlay -->
+<div class="overlay" id="startOverlay">
+  <div class="card">
+    <h2>HOLD THE HERTZ</h2>
+    <p>You're on shift in the GB control room. Demand and generation lurch around — kettles, wind lulls, interconnector trips — and the grid frequency drifts off 50 Hz whenever they don't match. Keep the needle pinned.</p>
+    <div class="howto">
+      <b>How to play</b><br>
+      · Frequency falls when demand &gt; generation. Dispatch more (▲) to push it back up; back off (▼) when it overshoots.<br>
+      · <b>Tickets warn you</b> a few seconds before each event hits — pre-position like a pro.<br>
+      · Stay within ±0.1 Hz to build your combo. Hit <b>49.2 / 50.8 Hz</b> and it's blackout.<br>
+      · Keys: <span class="k">Q</span><span class="k">A</span> gas · <span class="k">W</span><span class="k">S</span> battery · <span class="k">E</span><span class="k">D</span> hydro · <span class="k">F</span> demand flex — or tap the buttons.<br>
+      · Watch inertia fall through the shift. The end game is twitchy.<br>
+      · On <b>Trainee</b> you can pause (<span class="k">P</span> or the ⏸ button) — everything freezes, including ticket countdowns.
+    </div>
+    <p style="margin-bottom:4px"><b style="color:var(--ink)">Pick your shift:</b></p>
+    <div class="diff-row">
+      <button class="diff-btn" data-diff="trainee">🟢 TRAINEE<small>High inertia · gentle events<br>frequency drifts slowly</small></button>
+      <button class="diff-btn sel" data-diff="engineer">🟡 CONTROL ENGINEER<small>The real GB system<br>inertia falls as you play</small></button>
+      <button class="diff-btn" data-diff="storm">🔴 STORM SEASON<small>Low inertia · relentless events<br>the needle flies</small></button>
+    </div>
+    <button id="startBtn">START SHIFT</button>
+  </div>
+</div>
+
+<!-- tips overlay -->
+<div class="overlay hidden" id="tipsOverlay">
+  <div class="card" style="max-width:640px;text-align:left">
+    <h2 style="text-align:center">CONTROL ROOM BRIEFING</h2>
+    <div class="howto" style="margin-top:0">
+      <b>The one rule of frequency</b><br>
+      Frequency moves at a rate of <b>imbalance ÷ inertia</b>. If generation exceeds demand, the needle rises; if demand exceeds generation, it falls. A 1,000 MW shortfall moves the needle twice as fast when inertia has halved — that's why the late shift is twitchy, and why the real GB grid gets harder to balance as spinning turbines retire.
+    </div>
+    <div class="howto">
+      <b>⛽ Gas peaker — slow but mighty</b><br>
+      Ramps at ~130 MW/s toward your setpoint, so a 600 MW request takes ~5 seconds to arrive. Real thermal plant is slower still — minutes, not seconds — which is why operators dispatch it <b>ahead of need</b>. The moment a big ticket warns you, start the gas ramping. Don't forget to ramp it back down before the event expires, or you'll overshoot high.
+    </div>
+    <div class="howto">
+      <b>🔋 Battery — instant, but a sprinter</b><br>
+      Responds the same tick you press the button, like real grid batteries delivering Dynamic Containment in under a second. Its job is to <b>catch the first swing</b> while slower plant catches up — then back it off and let gas carry the load. It holds ~40 seconds at full output, so recharge (run it negative) in calm spells. It's also one of only two tools that can pull frequency <b>down</b> by absorbing power.
+    </div>
+    <div class="howto">
+      <b>💧 Pumped hydro — fast both ways</b><br>
+      Ramps ~320 MW/s and swings between generating (+) and pumping (−), like Dinorwig reaching full output in tens of seconds. It's your best answer to <b>surplus</b> events — storm fronts and solar surges — because pumping soaks up excess energy and refills the reservoir at the same time. Generating drains it, so don't lean on it all shift.
+    </div>
+    <div class="howto">
+      <b>🏠 Demand flex — the emergency 500</b><br>
+      Removing 500 MW of demand has exactly the same effect on frequency as adding 500 MW of generation — and it lands instantly. The catch: 8 seconds, then a cooldown. Save it for the moment a TV pickup stacks on top of a wind lull. (Real-world cousin: the Demand Flexibility Service that paid households to back off at peak.)
+    </div>
+    <div class="howto">
+      <b>The pattern that wins</b><br>
+      Ticket warns → battery/hydro instantly catch the swing → gas ramps in behind → battery backs off to recharge → <b>before the ticket expires, unwind everything</b>, because the event's megawatts vanish in one tick and the needle will fly the other way.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button id="tipsRetryBtn">CLOCK IN AGAIN</button>
+      <button id="tipsEasierBtn" style="background:#1a2530;color:var(--ink);border:1px solid var(--panel-edge)">DROP TO TRAINEE</button>
+    </div>
+  </div>
+</div>
+
+<!-- end overlay -->
+<div class="overlay hidden" id="endOverlay">
+  <div class="card">
+    <h2 id="endTitle">SHIFT COMPLETE</h2>
+    <p id="endBlurb"></p>
+    <div class="big" id="endScore">0</div>
+    <div class="grade" id="endGrade"></div>
+    <p id="endStats"></p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button id="retryBtn">CLOCK IN AGAIN</button>
+      <button id="tipsBtn" class="secondary hidden">📋 RE-READ THE BRIEFING</button>
+      <button id="menuBtn" class="secondary">CHANGE DIFFICULTY</button>
+    </div>
+  </div>
+</div>
+
+<!-- pause overlay -->
+<div class="overlay hidden" id="pauseOverlay">
+  <div class="card">
+    <h2>SHIFT PAUSED</h2>
+    <p>Kettle break. The whole system is frozen — frequency, ramps, ticket countdowns, the lot. It'll all pick up exactly where it left off.</p>
+    <button id="resumeBtn">RESUME SHIFT</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* ---------------- constants ---------------- */
+const SHIFT_LEN = 180;            // seconds
+const F_NOMINAL = 50.0;
+const TRIP_LOW = 49.2, TRIP_HIGH = 50.8;
+const GREEN = 0.1, AMBER = 0.2;
+const TICK = 50;                  // ms
+
+/* Difficulty: inertia start/end (MW·s), drift & event size multipliers, event gap ranges (s) */
+const DIFFICULTY = {
+  trainee: {label:'Trainee', inertiaStart:9500, inertiaEnd:6500, drift:0.5, evScale:0.7,
+            gapStartMin:10, gapStartMax:18, gapEndMin:6.5, gapEndMax:12, firstEvent:9},
+  engineer:{label:'Control engineer', inertiaStart:5000, inertiaEnd:2600, drift:1.0, evScale:1.0,
+            gapStartMin:5.5, gapStartMax:13, gapEndMin:3, gapEndMax:7, firstEvent:6},
+  storm:   {label:'Storm season', inertiaStart:4200, inertiaEnd:1800, drift:1.3, evScale:1.15,
+            gapStartMin:4.5, gapStartMax:10, gapEndMin:2.5, gapEndMax:5.5, firstEvent:5},
+};
+let currentDiff = 'engineer';
+
+const EVENTS_DOWN = [
+  {name:'TV pickup', sub:'Half-time. A million kettles.', emoji:'📺', mw:-900, dur:12},
+  {name:'Interconnector trip', sub:'Subsea link pole down.', emoji:'🔌', mw:-1000, dur:22},
+  {name:'Wind lull', sub:'The forecast lied again.', emoji:'🌬️', mw:-700, dur:18},
+  {name:'Generator trip', sub:'CCGT unit off without warning.', emoji:'⚡', mw:-800, dur:16},
+  {name:'Cold snap', sub:'Heat pumps and heaters surge.', emoji:'❄️', mw:-500, dur:25},
+  {name:'Evening peak', sub:'Everyone home, ovens on.', emoji:'🍳', mw:-450, dur:20},
+];
+const EVENTS_UP = [
+  {name:'Storm front', sub:'Wind floods onto the system.', emoji:'🌪️', mw:800, dur:18},
+  {name:'Solar surge', sub:'Clouds part at midday.', emoji:'☀️', mw:600, dur:15},
+  {name:'Factory shift ends', sub:'Industrial load drops off.', emoji:'🏭', mw:500, dur:15},
+  {name:'Embedded solar', sub:'Rooftops eat the demand.', emoji:'🏘️', mw:550, dur:14},
+];
+
+/* ---------------- state ---------------- */
+let S;
+function freshState(){
+  const D = DIFFICULTY[currentDiff];
+  return {
+    running:false, paused:false, t:0, freq:F_NOMINAL, score:0, combo:1, comboTimer:0,
+    inBandTime:0, peakDev:0, diff:D,
+    drift:0, driftPhase:Math.random()*6.28,
+    nextEventIn:D.firstEvent, events:[], ticketSeq:0,
+    gas:{set:0, act:0, min:0, max:1200, step:200, ramp:130},
+    batt:{out:0, min:-400, max:400, step:200, soc:100},
+    hydro:{set:0, act:0, min:-600, max:600, step:200, ramp:320, res:75},
+    dsr:{state:'ready', timer:0, ACTIVE:8, COOLDOWN:14},
+  };
+}
+
+/* ---------------- dial (SVG) ---------------- */
+const dial = document.getElementById('dial');
+const CX=240, CY=250, R=200;
+function ang(f){ // 49.0 → -180°, 51.0 → 0° (semicircle), map to radians for arc
+  const frac = (f-49.0)/2.0;            // 0..1
+  return Math.PI*(1-frac);              // PI..0
+}
+function pt(f, r){ const a=ang(f); return [CX + r*Math.cos(a), CY - r*Math.sin(a)]; }
+function arc(f1,f2,r1,r2){
+  const [x1,y1]=pt(f1,r2),[x2,y2]=pt(f2,r2),[x3,y3]=pt(f2,r1),[x4,y4]=pt(f1,r1);
+  const large = Math.abs(f2-f1)>1 ? 1:0;
+  return `M${x1},${y1} A${r2},${r2} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${r1},${r1} 0 ${large} 0 ${x4},${y4} Z`;
+}
+function buildDial(){
+  const bands = [
+    [49.0,49.2,'#ff4d5e'],[49.2,49.8,'#7a3340'],[49.8,49.9,'#8a6a2a'],
+    [49.9,50.1,'#1f6b44'],[50.1,50.2,'#8a6a2a'],[50.2,50.8,'#7a3340'],[50.8,51.0,'#ff4d5e'],
+  ];
+  let svg='';
+  for(const [a,b,c] of bands) svg += `<path d="${arc(a,b,R-26,R)}" fill="${c}" opacity="0.9"/>`;
+  for(let f=49.0; f<=51.001; f+=0.1){
+    const major = Math.abs(f*10 - Math.round(f*10))<0.01 && Math.round(f*10)%5===0;
+    const [x1,y1]=pt(f,R-26),[x2,y2]=pt(f,major?R-40:R-33);
+    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3a4a59" stroke-width="${major?2:1}"/>`;
+    if(major){
+      const [tx,ty]=pt(f,R-58);
+      svg += `<text x="${tx}" y="${ty}" fill="#8298ab" font-size="14" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">${f.toFixed(1)}</text>`;
+    }
+  }
+  svg += `<text x="${CX}" y="${CY-R-18}" fill="#8298ab" font-size="11" font-family="JetBrains Mono,monospace" text-anchor="middle" letter-spacing="2">49.9 – 50.1 PERFECT · ±0.2 STATUTORY · BEYOND = TROUBLE</text>`;
+  svg += `<g id="needle"><line x1="${CX}" y1="${CY}" x2="${CX}" y2="${CY-R+34}" stroke="#e8eef4" stroke-width="3" stroke-linecap="round"/><circle cx="${CX}" cy="${CY}" r="9" fill="#e8eef4"/></g>`;
+  dial.innerHTML = svg;
+}
+buildDial();
+const needle = document.getElementById('needle');
+function setNeedle(f){
+  const deg = ((f-49.0)/2.0)*180 - 90; // -90..+90
+  needle.setAttribute('transform', `rotate(${Math.max(-90,Math.min(90,deg))} ${CX} ${CY})`);
+}
+
+/* ---------------- DOM refs ---------------- */
+const $ = id => document.getElementById(id);
+const el = {
+  clock:$('clock'), combo:$('combo'), score:$('score'),
+  freqVal:$('freqVal'), freqRead:document.querySelector('.freq-readout'),
+  inertiaBar:$('inertiaBar').firstElementChild, inertiaVal:$('inertiaVal'),
+  imbalBar:$('imbalBar').querySelector('i'), imbalVal:$('imbalVal'),
+  tickets:$('tickets'),
+  gasOut:$('gasOut'), gasSet:$('gasSet'), gasBar:$('gasBar'),
+  battOut:$('battOut'), battSoc:$('battSoc'), battBar:$('battBar'),
+  hydroOut:$('hydroOut'), hydroRes:$('hydroRes'), hydroBar:$('hydroBar'),
+  dsrOut:$('dsrOut'), dsrBar:$('dsrBar'), dsrBtn:$('dsrBtn'),
+};
+
+/* ---------------- events / tickets ---------------- */
+function spawnEvent(){
+  const downBias = Math.random() < 0.62;
+  const pool = downBias ? EVENTS_DOWN : EVENTS_UP;
+  const tpl = pool[Math.floor(Math.random()*pool.length)];
+  const mw = Math.round(tpl.mw * S.diff.evScale / 50) * 50;
+  const ev = {...tpl, mw, id:'tk'+(S.ticketSeq++), warn:4, left:tpl.dur, phase:'warn'};
+  S.events.push(ev);
+  const node = document.createElement('div');
+  node.className = 'ticket warning ' + (ev.mw<0?'down':'up');
+  node.id = ev.id;
+  node.innerHTML = `
+    <div class="t-head"><span class="t-name">${ev.emoji} ${ev.name}</span>
+    <span class="t-mw">${ev.mw>0?'+':''}${ev.mw} MW</span></div>
+    <div class="t-sub">${ev.sub}</div>
+    <div class="t-sub t-status">Hits in ${ev.warn.toFixed(1)} s — get ready…</div>
+    <div class="t-bar"><i style="width:100%"></i></div>`;
+  const note = el.tickets.querySelector('.empty-note'); if(note) note.remove();
+  el.tickets.prepend(node);
+}
+function updateTickets(dt){
+  for(const ev of S.events){
+    const node = $(ev.id); if(!node) continue;
+    const status = node.querySelector('.t-status');
+    const bar = node.querySelector('.t-bar i');
+    if(ev.phase==='warn'){
+      ev.warn -= dt;
+      status.textContent = `Hits in ${Math.max(0,ev.warn).toFixed(1)} s — get ready…`;
+      bar.style.width = (Math.max(0,ev.warn)/4*100)+'%';
+      if(ev.warn<=0){ ev.phase='active'; node.classList.remove('warning'); node.classList.add('active'); }
+    }else{
+      ev.left -= dt;
+      status.textContent = `ACTIVE — ${Math.max(0,ev.left).toFixed(0)} s remaining`;
+      bar.style.width = (Math.max(0,ev.left)/ev.dur*100)+'%';
+      if(ev.left<=0){
+        node.style.transition='opacity .4s'; node.style.opacity='0';
+        setTimeout(()=>node.remove(), 420);
+      }
+    }
+  }
+  S.events = S.events.filter(e => e.phase==='warn' || e.left>0);
+  if(S.events.length===0 && !el.tickets.querySelector('.empty-note') && el.tickets.children.length===0){
+    el.tickets.innerHTML = '<div class="empty-note">Quiet on the system… for now.</div>';
+  }
+}
+
+/* ---------------- physics ---------------- */
+function inertiaAt(t){
+  const D = S ? S.diff : DIFFICULTY[currentDiff];
+  return D.inertiaStart - (D.inertiaStart - D.inertiaEnd)*(t/SHIFT_LEN);
+}
+function step(dt){
+  S.t += dt;
+
+  // assets ramping
+  const g=S.gas, h=S.hydro, b=S.batt, d=S.dsr;
+  g.act += Math.max(-g.ramp*dt, Math.min(g.ramp*dt, g.set-g.act));
+  h.act += Math.max(-h.ramp*dt, Math.min(h.ramp*dt, h.set-h.act));
+  // battery state of charge
+  // battery state of charge: full 400 MW discharge ≈ 40 s of juice
+  b.soc -= (b.out/400)*2.5*dt;
+  b.soc = Math.min(100, Math.max(0, b.soc));
+  if(b.soc<=0 && b.out>0){ b.out=0; toastAsset('asset-batt'); }
+  if(b.soc>=100 && b.out<0){ b.out=0; }
+  // hydro reservoir
+  h.res -= (h.act/600)*2.2*dt;
+  h.res = Math.min(100, Math.max(0, h.res));
+  if(h.res<=0 && h.set>0){ h.set=0; toastAsset('asset-hydro'); }
+  if(h.res>=100 && h.set<0){ h.set=0; }
+  // DSR
+  let dsrMW = 0;
+  if(d.state==='active'){ dsrMW = 500; d.timer -= dt; if(d.timer<=0){ d.state='cooldown'; d.timer=d.COOLDOWN; } }
+  else if(d.state==='cooldown'){ d.timer -= dt; if(d.timer<=0){ d.state='ready'; } }
+
+  // background drift (slow wander)
+  S.driftPhase += dt*0.25;
+  S.drift = (140*Math.sin(S.driftPhase) + 90*Math.sin(S.driftPhase*2.7+1.3)) * S.diff.drift;
+
+  // active event MW
+  let evMW = 0;
+  for(const ev of S.events) if(ev.phase==='active') evMW += ev.mw;
+
+  const playerMW = g.act + b.out + h.act + dsrMW;
+  const imbalance = playerMW + evMW + S.drift;
+
+  const H = inertiaAt(S.t);
+  S.freq += (imbalance / H) * dt * 1.0;
+
+  // tiny natural damping (load relief)
+  S.freq += (F_NOMINAL - S.freq) * 0.015 * dt * (H/S.diff.inertiaStart);
+
+  S.peakDev = Math.max(S.peakDev, Math.abs(S.freq-F_NOMINAL));
+
+  // scoring
+  const dev = Math.abs(S.freq - F_NOMINAL);
+  if(dev <= GREEN){
+    S.comboTimer += dt;
+    if(S.comboTimer >= 5){ S.combo = Math.min(8, S.combo+1); S.comboTimer = 0; }
+    S.score += 12 * S.combo * dt;
+    S.inBandTime += dt;
+  } else if(dev <= AMBER){
+    S.score += 3 * dt;
+    S.inBandTime += dt;
+  } else {
+    S.combo = 1; S.comboTimer = 0;
+  }
+
+  // event scheduler — gets more frantic
+  S.nextEventIn -= dt;
+  if(S.nextEventIn <= 0){
+    spawnEvent();
+    const p = S.t/SHIFT_LEN, D = S.diff;
+    const minGap = D.gapStartMin + (D.gapEndMin - D.gapStartMin)*p;
+    const maxGap = D.gapStartMax + (D.gapEndMax - D.gapStartMax)*p;
+    S.nextEventIn = minGap + Math.random()*(maxGap-minGap);
+  }
+
+  updateTickets(dt);
+
+  // trip / end
+  if(S.freq <= TRIP_LOW || S.freq >= TRIP_HIGH) return endGame(false);
+  if(S.t >= SHIFT_LEN) return endGame(true);
+}
+
+/* ---------------- render ---------------- */
+function fmtClock(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function render(){
+  el.clock.textContent = fmtClock(SHIFT_LEN - S.t);
+  el.score.textContent = Math.floor(S.score).toLocaleString();
+  el.combo.textContent = '×'+S.combo;
+  el.combo.classList.toggle('hot', S.combo>=4);
+
+  el.freqVal.textContent = S.freq.toFixed(3);
+  setNeedle(S.freq);
+  const dev = Math.abs(S.freq-F_NOMINAL);
+  el.freqRead.className = 'freq-readout ' + (dev<=GREEN?'f-green':dev<=AMBER?'f-amber':'f-red');
+  document.body.classList.toggle('tripping', dev>AMBER*2);
+
+  const H = inertiaAt(S.t);
+  el.inertiaBar.style.width = (H/S.diff.inertiaStart*100)+'%';
+  el.inertiaVal.textContent = Math.round(H)+' MW·s';
+
+  // imbalance bar (±1500 scale)
+  let evMW=0; for(const ev of S.events) if(ev.phase==='active') evMW+=ev.mw;
+  const imb = S.gas.act + S.batt.out + S.hydro.act + (S.dsr.state==='active'?500:0) + evMW + S.drift;
+  const frac = Math.max(-1, Math.min(1, imb/1500));
+  const i = el.imbalBar;
+  if(frac>=0){ i.style.left='50%'; i.style.width=(frac*50)+'%'; i.style.background='var(--demand)'; }
+  else { i.style.width=(-frac*50)+'%'; i.style.left=(50+frac*50)+'%'; i.style.background='var(--alarm)'; }
+  el.imbalVal.textContent = (imb>0?'+':'')+Math.round(imb)+' MW';
+
+  // assets
+  el.gasOut.textContent = Math.round(S.gas.act);
+  el.gasSet.textContent = S.gas.set;
+  el.gasBar.style.left='0'; el.gasBar.style.width = (S.gas.act/S.gas.max*100)+'%';
+
+  el.battOut.textContent = (S.batt.out>0?'+':'')+S.batt.out;
+  el.battSoc.textContent = Math.round(S.batt.soc);
+  paintBipolar(el.battBar, S.batt.out, S.batt.max);
+
+  el.hydroOut.textContent = (S.hydro.act>0?'+':'')+Math.round(S.hydro.act);
+  el.hydroRes.textContent = Math.round(S.hydro.res);
+  paintBipolar(el.hydroBar, S.hydro.act, S.hydro.max);
+
+  const d=S.dsr;
+  if(d.state==='ready'){ el.dsrOut.textContent='READY'; el.dsrOut.style.color='var(--healthy)'; el.dsrBar.style.width='100%'; el.dsrBar.style.background='var(--healthy)'; el.dsrBtn.disabled=false; }
+  else if(d.state==='active'){ el.dsrOut.textContent='SHEDDING'; el.dsrOut.style.color='var(--phosphor)'; el.dsrBar.style.width=(d.timer/d.ACTIVE*100)+'%'; el.dsrBar.style.background='var(--phosphor)'; el.dsrBtn.disabled=true; }
+  else { el.dsrOut.textContent='COOLDOWN'; el.dsrOut.style.color='var(--dim)'; el.dsrBar.style.width=((1-d.timer/d.COOLDOWN)*100)+'%'; el.dsrBar.style.background='var(--dim)'; el.dsrBtn.disabled=true; }
+}
+function paintBipolar(bar, val, max){
+  const frac = Math.max(-1, Math.min(1, val/max));
+  if(frac>=0){ bar.style.left='50%'; bar.style.width=(frac*50)+'%'; bar.style.background='var(--healthy)'; }
+  else { bar.style.width=(-frac*50)+'%'; bar.style.left=(50+frac*50)+'%'; bar.style.background='var(--demand)'; }
+}
+function toastAsset(id){ const n=$(id); n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash'); }
+
+/* ---------------- controls ---------------- */
+function act(a){
+  if(!S.running || S.paused) return;
+  const g=S.gas, b=S.batt, h=S.hydro, d=S.dsr;
+  switch(a){
+    case 'gas+': g.set = Math.min(g.max, g.set+g.step); break;
+    case 'gas-': g.set = Math.max(g.min, g.set-g.step); break;
+    case 'batt+': if(b.soc>0) b.out = Math.min(b.max, b.out+b.step); break;
+    case 'batt-': b.out = Math.max(b.min, b.out-b.step); break;
+    case 'hydro+': if(h.res>0) h.set = Math.min(h.max, h.set+h.step); break;
+    case 'hydro-': h.set = Math.max(h.min, h.set-h.step); break;
+    case 'dsr': if(d.state==='ready'){ d.state='active'; d.timer=d.ACTIVE; toastAsset('asset-dsr'); } break;
+  }
+}
+document.querySelectorAll('[data-act]').forEach(btn=>{
+  let rep = null;
+  const fire = ()=>act(btn.dataset.act);
+  const stop = ()=>{ if(rep){ clearInterval(rep); rep=null; } };
+  btn.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    fire();
+    stop();
+    rep = setInterval(fire, 210);   // hold to keep dispatching
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev, stop));
+});
+const KEYMAP = {q:'gas+',a:'gas-',w:'batt+',s:'batt-',e:'hydro+',d:'hydro-',f:'dsr'};
+window.addEventListener('keydown', e=>{
+  const k = e.key.toLowerCase();
+  if(k==='p'){ togglePause(); e.preventDefault(); return; }
+  const a = KEYMAP[k];
+  if(a){ act(a); e.preventDefault(); }
+});
+
+/* ---------------- pause (Trainee only) ---------------- */
+function pauseGame(){
+  if(!S.running || S.paused || currentDiff!=='trainee') return;
+  S.paused = true;
+  cancelAnimationFrame(loopId);
+  $('pauseOverlay').classList.remove('hidden');
+}
+function resumeGame(){
+  if(!S.running || !S.paused) return;
+  S.paused = false;
+  $('pauseOverlay').classList.add('hidden');
+  lastTs = null;                    // so no time elapses across the pause
+  loopId = requestAnimationFrame(loop);
+}
+function togglePause(){ S && S.paused ? resumeGame() : pauseGame(); }
+$('pauseBtn').addEventListener('click', pauseGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+// auto-pause if the tab is hidden mid-shift on Trainee
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden && S && S.running && currentDiff==='trainee') pauseGame();
+});
+
+/* ---------------- loop ---------------- */
+let loopId=null, lastTs=null;
+function loop(ts){
+  if(!S.running || S.paused) return;
+  if(lastTs===null) lastTs=ts;
+  let dt = Math.min(0.1, (ts-lastTs)/1000);
+  lastTs = ts;
+  step(dt);
+  if(S.running){ render(); loopId = requestAnimationFrame(loop); }
+}
+
+/* ---------------- start / end ---------------- */
+function startGame(){
+  S = freshState();
+  S.running = true;
+  el.tickets.innerHTML = '<div class="empty-note">Quiet on the system… for now.</div>';
+  $('startOverlay').classList.add('hidden');
+  $('endOverlay').classList.add('hidden');
+  $('tipsOverlay').classList.add('hidden');
+  $('pauseOverlay').classList.add('hidden');
+  $('pauseBtn').classList.toggle('hidden', currentDiff!=='trainee');
+  document.body.classList.remove('tripping');
+  lastTs = null;
+  render();
+  loopId = requestAnimationFrame(loop);
+}
+function endGame(survived){
+  S.running = false;
+  S.paused = false;
+  cancelAnimationFrame(loopId);
+  $('pauseBtn').classList.add('hidden');
+  document.body.classList.remove('tripping');
+  const pct = Math.round(S.inBandTime / Math.max(1,S.t) * 100);
+  const score = Math.floor(S.score);
+  const t = $('endTitle'), b = $('endBlurb'), g = $('endGrade'), st = $('endStats');
+  if(!survived){
+    t.textContent = 'BLACKOUT'; t.className='bad';
+    b.textContent = S.freq<=TRIP_LOW
+      ? 'Frequency collapsed and low-frequency demand disconnection fired. Somewhere, a million routers just rebooted. Want a refresher on how each tool moves the needle?'
+      : 'Frequency ran away high and protection tripped plant off. The post-event report will not be kind. Want a refresher on how each tool moves the needle?';
+    $('tipsBtn').classList.remove('hidden');
+  } else {
+    t.textContent = 'SHIFT COMPLETE'; t.className='';
+    b.textContent = 'You handed over a stable system. The night shift owes you a tea.';
+    $('tipsBtn').classList.add('hidden');
+  }
+  let grade;
+  if(!survived) grade = '⚫ Lights out — see you at the inquiry';
+  else if(pct>=92 && S.peakDev<=0.25) grade='🏆 System Operator of the Year';
+  else if(pct>=80) grade='🟢 Seasoned control engineer';
+  else if(pct>=60) grade='🟡 Probationary dispatcher';
+  else grade='🔴 Back to the simulator';
+  g.textContent = grade;
+  $('endScore').textContent = score.toLocaleString();
+  st.textContent = `${S.diff.label} shift · in-band ${pct}% · worst excursion ±${S.peakDev.toFixed(2)} Hz · survived ${Math.floor(S.t)} s of ${SHIFT_LEN} s`;
+  $('endOverlay').classList.remove('hidden');
+}
+$('startBtn').addEventListener('click', startGame);
+$('retryBtn').addEventListener('click', startGame);
+$('menuBtn').addEventListener('click', ()=>{
+  $('endOverlay').classList.add('hidden');
+  $('startOverlay').classList.remove('hidden');
+});
+$('tipsBtn').addEventListener('click', ()=>{
+  $('endOverlay').classList.add('hidden');
+  $('tipsOverlay').classList.remove('hidden');
+});
+$('tipsRetryBtn').addEventListener('click', ()=>{ $('tipsOverlay').classList.add('hidden'); startGame(); });
+$('tipsEasierBtn').addEventListener('click', ()=>{ setDiff('trainee'); $('tipsOverlay').classList.add('hidden'); startGame(); });
+
+function setDiff(d){
+  currentDiff = d;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('sel', b.dataset.diff===d));
+}
+document.querySelectorAll('.diff-btn').forEach(b=>{
+  b.addEventListener('click', ()=>setDiff(b.dataset.diff));
+});
+window.addEventListener('keydown', e=>{
+  if(e.key===' ' && (!S || !S.running)){ e.preventDefault(); startGame(); }
+});
+
+// initial paint
+S = freshState();
+render();
+})();
+</script>
+</body>
+</html>
