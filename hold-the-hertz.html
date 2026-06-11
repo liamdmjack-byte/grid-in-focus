@@ -32,7 +32,8 @@ body{
     radial-gradient(ellipse at 50% -20%, #16222e 0%, transparent 55%),
     repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
 }
-@media(hover:none){.a-key{display:none}.howto .k{display:none}}
+@media(hover:none){.a-key{display:none}.kb-only{display:none}}
+@media(hover:hover){.touch-only{display:none}}
 button{user-select:none;-webkit-user-select:none}
 .wrap{max-width:1080px;margin:0 auto;padding:14px 16px 28px}
 
@@ -51,18 +52,7 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 #dialPanel{grid-area:dial}
 #ticketPanel{grid-area:tickets}
 .assets{grid-area:assets;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media(max-width:860px){
-  .game{grid-template-columns:1fr;grid-template-areas:"dial" "assets" "tickets"}
-  .assets{grid-template-columns:repeat(2,1fr);gap:8px}
-  .wrap{padding:10px 10px 22px}
-  #dial{width:min(100%,360px)}
-  .meters{grid-template-columns:1fr;gap:8px}
-  .meter .a-note{display:none}
-  #tickets{min-height:80px;max-height:230px}
-  .panel{padding:11px}
-  .hud{gap:12px}
-  .hud .val{font-size:18px}
-}
+
 
 .panel{background:var(--panel);border:1px solid var(--panel-edge);border-radius:10px;padding:14px;position:relative}
 .panel h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
@@ -127,8 +117,15 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 @keyframes assetflash{0%{box-shadow:0 0 0 2px var(--phosphor)}100%{box-shadow:none}}
 
 /* ---------- overlays ---------- */
-.overlay{position:fixed;inset:0;background:rgba(5,8,11,.9);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
-.overlay .card{background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;max-width:560px;width:100%;padding:26px;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(5,8,11,.9);display:flex;z-index:50;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.overlay .card{background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;max-width:560px;width:100%;padding:26px;text-align:center;margin:auto}
+@media(max-width:520px){
+  .overlay{padding:10px}
+  .overlay .card{padding:18px 14px}
+  .howto{font-size:12px;padding:10px 11px;line-height:1.5}
+  .overlay h2{font-size:21px}
+  .overlay p{font-size:13px}
+}
 .overlay h2{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--phosphor);letter-spacing:.03em;margin-bottom:10px}
 .overlay h2.bad{color:var(--alarm)}
 .overlay p{color:var(--dim);font-size:14px;line-height:1.55;margin-bottom:10px}
@@ -152,6 +149,51 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 /* trip flash */
 body.tripping::after{content:'';position:fixed;inset:0;pointer-events:none;background:rgba(255,77,94,.07);animation:blink .4s steps(2) infinite;z-index:40}
 footer{margin-top:14px;font-size:11px;color:var(--dim);line-height:1.5;border-top:1px solid var(--panel-edge);padding-top:10px}
+
+/* ---------- mobile: one-screen playfield (must stay last to override base rules) ---------- */
+@media(max-width:860px){
+  /* one-screen playfield: dial → ticket strip → controls (thumbs at the bottom) */
+  .game{grid-template-columns:1fr;grid-template-areas:"dial" "tickets" "assets";gap:8px}
+  .wrap{padding:8px 8px 14px}
+  footer{display:none}
+  header{padding-bottom:6px;margin-bottom:8px;align-items:center}
+  .brand p{display:none}
+  .brand h1{font-size:17px}
+  .hud{gap:10px}
+  .hud .val{font-size:16px}
+  .hud .label{font-size:9px}
+  #pauseBtn{padding:6px 9px;font-size:11px}
+
+  /* compact dial */
+  #dialPanel{padding:8px 10px 6px}
+  #dialPanel h2{display:none}
+  #dial{width:min(62vw,270px)}
+  .freq-readout{font-size:27px;margin-top:-6px}
+  .meters{grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .meter .a-note{display:none}
+  .meter .label{font-size:9px}
+  .bar{height:8px}
+
+  /* tickets become a horizontal strip — newest slides in on the left */
+  #ticketPanel{padding:7px 9px 8px}
+  #ticketPanel h2{margin-bottom:6px;font-size:9px}
+  #tickets{display:flex;flex-direction:row;gap:8px;overflow-x:auto;overflow-y:hidden;min-height:74px;max-height:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .ticket{flex:0 0 auto;width:195px;padding:7px 9px;font-size:12px}
+  .ticket .t-sub:not(.t-status){display:none}   /* drop flavour text, keep the countdown */
+  .ticket .t-mw{font-size:12px}
+  .ticket .t-bar{margin-top:5px}
+  .empty-note{padding:4px 2px;white-space:nowrap}
+
+  /* compact controls */
+  .assets{grid-template-columns:repeat(2,1fr);gap:8px}
+  .asset{padding:8px;gap:5px}
+  .asset .a-name{font-size:12px}
+  .asset .a-out{font-size:16px}
+  .asset button{min-height:42px;font-size:15px;padding:7px 0}
+  .asset .a-note{font-size:10px;line-height:1.3;min-height:13px}
+  .note-extra{display:none}
+  .panel{padding:10px}
+}
 </style>
 </head>
 <body>
@@ -199,28 +241,28 @@ footer{margin-top:14px;font-size:11px;color:var(--dim);line-height:1.5;border-to
       <div class="a-out"><span id="gasOut">0</span> <small>MW</small></div>
       <div class="a-bar"><i id="gasBar"></i></div>
       <div class="a-btns"><button data-act="gas-">▼</button><button data-act="gas+">▲</button></div>
-      <div class="a-note">Big muscle, slow ramp. Setpoint <span id="gasSet">0</span> MW.</div>
+      <div class="a-note"><span class="note-extra">Big muscle, slow ramp. </span>Setpoint <span id="gasSet">0</span> MW.</div>
     </div>
     <div class="asset" id="asset-batt">
       <div class="a-head"><span class="a-name">🔋 Battery</span><span class="a-key">W / S</span></div>
       <div class="a-out"><span id="battOut">0</span> <small>MW</small></div>
       <div class="a-bar"><span class="zero"></span><i id="battBar"></i></div>
       <div class="a-btns"><button data-act="batt-">▼</button><button data-act="batt+">▲</button></div>
-      <div class="a-note">Instant, but finite. Charge <span id="battSoc">100</span>%. Run negative to recharge.</div>
+      <div class="a-note"><span class="note-extra">Instant, but finite. </span>Charge <span id="battSoc">100</span>%.<span class="note-extra"> Run negative to recharge.</span></div>
     </div>
     <div class="asset" id="asset-hydro">
       <div class="a-head"><span class="a-name">💧 Pumped hydro</span><span class="a-key">E / D</span></div>
       <div class="a-out"><span id="hydroOut">0</span> <small>MW</small></div>
       <div class="a-bar"><span class="zero"></span><i id="hydroBar"></i></div>
       <div class="a-btns"><button data-act="hydro-">▼</button><button data-act="hydro+">▲</button></div>
-      <div class="a-note">Fast both ways. Reservoir <span id="hydroRes">75</span>%. Pump (negative) to refill.</div>
+      <div class="a-note"><span class="note-extra">Fast both ways. </span>Reservoir <span id="hydroRes">75</span>%.<span class="note-extra"> Pump (negative) to refill.</span></div>
     </div>
     <div class="asset" id="asset-dsr">
       <div class="a-head"><span class="a-name">🏠 Demand flex</span><span class="a-key">F</span></div>
       <div class="a-out"><span id="dsrOut">READY</span></div>
       <div class="a-bar"><i id="dsrBar" style="width:100%;left:0"></i></div>
       <div class="a-btns"><button id="dsrBtn" data-act="dsr">SHED 500 MW</button></div>
-      <div class="a-note">Pays homes &amp; factories to back off for 8 s. Then a cooldown.</div>
+      <div class="a-note note-extra">Pays homes &amp; factories to back off for 8 s. Then a cooldown.</div>
     </div>
   </div>
   </div>
@@ -240,9 +282,9 @@ footer{margin-top:14px;font-size:11px;color:var(--dim);line-height:1.5;border-to
       · Frequency falls when demand &gt; generation. Dispatch more (▲) to push it back up; back off (▼) when it overshoots.<br>
       · <b>Tickets warn you</b> a few seconds before each event hits — pre-position like a pro.<br>
       · Stay within ±0.1 Hz to build your combo. Hit <b>49.2 / 50.8 Hz</b> and it's blackout.<br>
-      · Keys: <span class="k">Q</span><span class="k">A</span> gas · <span class="k">W</span><span class="k">S</span> battery · <span class="k">E</span><span class="k">D</span> hydro · <span class="k">F</span> demand flex — or tap the buttons.<br>
+      · <span class="kb-only">Keys: <span class="k">Q</span><span class="k">A</span> gas · <span class="k">W</span><span class="k">S</span> battery · <span class="k">E</span><span class="k">D</span> hydro · <span class="k">F</span> demand flex — or tap the buttons.<br></span><span class="touch-only">Tap ▲▼ to dispatch — or press and hold to keep ramping.<br></span>
       · Watch inertia fall through the shift. The end game is twitchy.<br>
-      · On <b>Trainee</b> you can pause (<span class="k">P</span> or the ⏸ button) — everything freezes, including ticket countdowns.
+      · On <b>Trainee</b> you can pause with the ⏸ button<span class="kb-only"> (or <span class="k">P</span>)</span> — everything freezes, including ticket countdowns.
     </div>
     <p style="margin-bottom:4px"><b style="color:var(--ink)">Pick your shift:</b></p>
     <div class="diff-row">
@@ -439,6 +481,7 @@ function spawnEvent(){
     <div class="t-bar"><i style="width:100%"></i></div>`;
   const note = el.tickets.querySelector('.empty-note'); if(note) note.remove();
   el.tickets.prepend(node);
+  el.tickets.scrollLeft = 0; el.tickets.scrollTop = 0;  // newest ticket always visible
 }
 function updateTickets(dt){
   for(const ev of S.events){
