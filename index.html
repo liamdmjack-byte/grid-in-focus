@@ -281,6 +281,11 @@
     color: var(--gen-wind);
   }
 
+  .post-status.coming {
+    border-color: var(--ink-muted);
+    color: var(--ink-muted);
+  }
+
   .post-title {
     font-family: 'Fraunces', serif;
     font-weight: 500;
@@ -462,7 +467,7 @@
       <div class="hero-aside-label">— What this is</div>
       <p class="hero-aside-text">
         One question. One dataset. <strong>One chart that earns its place.</strong>
-        Every dashboard pulls live from the source — NESO, ENA, Ofgem, the DNOs — so the numbers move when the grid does.
+        Every dashboard pulls live from the source — NESO, Elexon, Ofgem, the DNOs — so the numbers move when the grid does.
       </p>
       <p class="hero-aside-text">
         Built for the curious non-specialist as much as the practitioner.
@@ -475,12 +480,12 @@
     <div class="promise-item">
       <div class="promise-num">i.</div>
       <div class="promise-title">Live, not static</div>
-      <div class="promise-text">Every dashboard fetches data on page load where possible. No screenshots, no stale numbers, no "as of" footnotes that age badly.</div>
+      <div class="promise-text">Every dashboard fetches data on page load. No screenshots, no stale numbers, no "as of" footnotes that age badly.</div>
     </div>
     <div class="promise-item">
       <div class="promise-num">ii.</div>
       <div class="promise-title">Source over speculation</div>
-      <div class="promise-text">Public data only — NESO Data Portal, Ofgem, ENA Open Networks and more. Methodology stated, links provided.</div>
+      <div class="promise-text">Public data only — NESO Data Portal, Elexon BMRS, Ofgem, ENA Open Networks. Methodology stated, links provided.</div>
     </div>
     <div class="promise-item">
       <div class="promise-num">iii.</div>
@@ -491,8 +496,8 @@
 
   <!-- POSTS -->
   <div class="section-heading">
-    <h2>The series so far</h2>
-    <span class="count"> 6 Live · 6 More Being Planned</span>
+    <h2>Volume I — explaining the grid</h2>
+    <span class="count">20 posts + specials · publishing weekly</span>
   </div>
 
   <div class="posts">
@@ -504,8 +509,7 @@
       </div>
       <h3 class="post-title">Where did Britain's electricity <em>actually</em> come from this month?</h3>
       <p class="post-blurb">
-        Thirty days of generation mix data. How much of the month was wind-driven, when gas had to step in,
-        and how the carbon intensity curve actually looks day to day.
+        Thirty days of generation mix data. How much of the month was wind-driven, when gas had to step in, and how the carbon intensity curve actually looks day to day.
       </p>
       <div class="post-source">NESO Carbon Intensity API · daily refresh</div>
       <div class="post-arrow">→</div>
@@ -518,8 +522,7 @@
       </div>
       <h3 class="post-title">£1.7 billion to turn <em>wind farms off</em>.</h3>
       <p class="post-blurb">
-        Constraint payments are now bigger than the entire balancing budget was in 2018. Seven years of cost data,
-        what's actually driving the bill, and where it's heading by 2030.
+        Constraint payments are now bigger than the entire balancing budget was in 2018. Seven years of cost data, what's actually driving the bill, and where it's heading by 2030.
       </p>
       <div class="post-source">NESO Annual Balancing Costs Report</div>
       <div class="post-arrow">→</div>
@@ -532,11 +535,10 @@
       </div>
       <h3 class="post-title">A 722 GW queue, reshaped to <em>283 GW</em>.</h3>
       <p class="post-blurb">
-        The largest connections clear-out Britain has ever done. The pre-reform queue, the post-reform pipeline,
-        the technology mix, and how it all maps to the Clean Power 2030 capacity range.
+        The largest connections clear-out Britain has ever done. The pre-reform queue, the post-reform pipeline, the technology mix, and how it all maps to the Clean Power 2030 capacity range.
       </p>
       <div class="post-source">NESO Connections Reform Results</div>
-    <div class="post-arrow">→</div>
+      <div class="post-arrow">→</div>
     </a>
 
     <a href="demand.html" class="post-card live">
@@ -546,11 +548,10 @@
       </div>
       <h3 class="post-title">When does Britain use the most electricity?</h3>
       <p class="post-blurb">
-        A heatmap of demand by hour-of-day and day-of-week across a year. Where the duck curve is forming,
-        and where the flexibility opportunities are hiding.
+        A heatmap of demand by hour-of-day and day-of-week across a year. Where the duck curve is forming, and where the flexibility opportunities are hiding.
       </p>
       <div class="post-source">NESO Historic Demand · half-hourly</div>
-    <div class="post-arrow">→</div>
+      <div class="post-arrow">→</div>
     </a>
 
     <a href="future-energy-scenarios.html" class="post-card live">
@@ -560,114 +561,399 @@
       </div>
       <h3 class="post-title">What the FES tells us about <em>2030.</em></h3>
       <p class="post-blurb">
-        Future Energy Scenarios capacity build-out trajectories. The gap between current build rates and
-        the trajectories the grid actually needs.
+        Future Energy Scenarios capacity build-out trajectories. The gap between current build rates and the trajectories the grid actually needs.
       </p>
       <div class="post-source">NESO Future Energy Scenarios</div>
-    <div class="post-arrow">→</div>
+      <div class="post-arrow">→</div>
     </a>
 
- <a href="your-distribution-insights.html" class="post-card live">
+    <a href="your-distribution-insights.html" class="post-card live">
       <div class="post-meta">
         <span class="post-num">№ 06</span>
         <span class="post-status live">● Live</span>
       </div>
-      <h3 class="post-title">Who runs your bit of <em>the grid</em> ?</h3>
+      <h3 class="post-title">Who runs your bit of <em>the grid</em>?</h3>
       <p class="post-blurb">
-        Britain's six distribution network operators, the 14 areas they serve, and the company that
-        actually owns the wires to your meter. Enter your postcode to find yours, then see how it's
-        performing under RIIO-ED2.
+        Britain's six distribution network operators, the 14 areas they serve, and the company that actually owns the wires to your meter. Enter your postcode to find yours, then see how it's performing under RIIO-ED2.
       </p>
       <div class="post-source">Ofgem RIIO-ED2 Annual Report · Postcodes.io</div>
       <div class="post-arrow">→</div>
     </a>
-    
- <a href="low-carbon-connections.html" class="post-card live">
+
+    <a href="low-carbon-connections.html" class="post-card live">
       <div class="post-meta">
         <span class="post-num">№ 07</span>
         <span class="post-status live">● Live</span>
-  </div>
-  <h3 class="post-title">The quiet revolution on <em>your street</em>.</h3>
-  <p class="post-blurb">
-    EVs, heat pumps, solar, home batteries. They're connecting to Britain's local electricity
-    network faster than it was designed for. Includes an interactive model — set the mix on
-    a 40-home street and watch the substation load respond in real time.
-  </p>
-  <div class="post-source">DESNZ · SMMT · Zapmap · Carbon Intensity API</div>
-<div class="post-arrow">→</div>
+      </div>
+      <h3 class="post-title">The quiet revolution on <em>your street</em>.</h3>
+      <p class="post-blurb">
+        EVs, heat pumps, solar, home batteries. They're connecting to Britain's local electricity network faster than it was designed for. Includes an interactive model — set the mix on a 40-home street and watch the substation load respond in real time.
+      </p>
+      <div class="post-source">DESNZ · SMMT · Zapmap · Carbon Intensity API</div>
+      <div class="post-arrow">→</div>
     </a>
-     
- 
-    <a href="wires-under-the-sea.html" class="post-card live">
+
+    <a href="interconnectors.html" class="post-card live">
       <div class="post-meta">
         <span class="post-num">№ 08</span>
         <span class="post-status live">● Live</span>
       </div>
       <h3 class="post-title">Who is Britain trading <em>electricity</em> with?</h3>
       <p class="post-blurb">
-        Live flows across the interconnectors to France, Norway, the Netherlands, Belgium, Denmark
-        and Ireland. When we import, when we export, and what the direction tells you about the system.
+        Nine cables to six countries, drawn to true bearings. Why your bill is partly set by Norwegian rainfall, what flows through the Channel Tunnel, and when Britain flips from importer to exporter.
       </p>
       <div class="post-source">Elexon BMRS · ENTSO-E Transparency</div>
-    <div class="post-arrow">→</div>
+      <div class="post-arrow">→</div>
     </a>
- 
-  <div class="post-card draft">
-      <div class="post-meta">
-    <span class="post-num">№ 09</span>
-     <span class="post-status coming">○ Coming soon</span>
-  </div>
-  <h3 class="post-title">Why does it take <em>10 years</em> to build a pylon?</h3>
-  <p class="post-blurb">
-    Britain is paying £1.8bn a year to switch wind farms off because there aren't enough
-    cables to carry the power south. The fix exists. The process of getting permission
-    to build it takes a decade. Includes an interactive stage-by-stage breakdown and a
-    calculator to find your personal share of the £1.8bn.
-  </p>
-  <div class="post-source">NESO · Planning Inspectorate · National Grid RIIO-T3</div>
- </div>
 
- 
-    <div class="post-card draft">
+    <a href="substations.html" class="post-card live">
+      <div class="post-meta">
+        <span class="post-num">№ 09</span>
+        <span class="post-status live">● Live</span>
+      </div>
+      <h3 class="post-title">Why does it take <em>10 years</em> to build a pylon?</h3>
+      <p class="post-blurb">
+        Britain is paying £1.8bn a year to switch wind farms off because there aren't enough cables to carry the power south. The fix exists. Getting permission takes a decade. Includes a stage-by-stage breakdown and a calculator to find your personal share of the £1.8bn.
+      </p>
+      <div class="post-source">NESO · Planning Inspectorate · National Grid RIIO-T3</div>
+      <div class="post-arrow">→</div>
+    </a>
+
+    <a href="workforce.html" class="post-card live">
       <div class="post-meta">
         <span class="post-num">№ 10</span>
-        <span class="post-status coming">○ Coming soon</span>
+        <span class="post-status live">● Live</span>
       </div>
-      <h3 class="post-title">What you actually pay for the <em>network</em>.</h3>
+      <h3 class="post-title">The <em>400,000</em>.</h3>
       <p class="post-blurb">
-        Use of system charges, capacity charges, the TNUoS regional split. The bit of your bill
-        that pays for the wires — and why it varies by where you live and when you use power.
+        The grid of the 2030s has to be built by people who haven't been hired yet. The roles, the training timelines that outrun the deadline, and the supply chain queue for transformers — with an interactive recruitment gap model.
       </p>
-      <div class="post-source">NESO TNUoS · Ofgem charging methodology</div>
-    </div>
- 
+      <div class="post-source">Prospect · IEA · National Grid</div>
+      <div class="post-arrow">→</div>
+    </a>
+
+    <a href="world-cup-special.html" class="post-card live">
+      <div class="post-meta">
+        <span class="post-num">★ Special</span>
+        <span class="post-status live">● Live</span>
+      </div>
+      <h3 class="post-title">What happens to the grid at <em>half-time</em>?</h3>
+      <p class="post-blurb">
+        The kettle surge, explained live through the World Cup. The 1990 record that still stands, the mountain in Wales that catches it in 12 seconds, and why pubs are getting free electricity this summer.
+      </p>
+      <div class="post-source">NESO · National Grid archive · Octopus Energy</div>
+      <div class="post-arrow">→</div>
+    </a>
+
     <div class="post-card draft">
       <div class="post-meta">
         <span class="post-num">№ 11</span>
         <span class="post-status coming">○ Coming soon</span>
       </div>
-      <h3 class="post-title">Clean Power 2030: are we <em>on track</em>?</h3>
+      <h3 class="post-title">Britain's electricity has a <em>pulse</em>.</h3>
       <p class="post-blurb">
-        The flagship scorecard. Every Clean Power 2030 capacity target, set against what's been
-        commissioned, what's under construction, and what's still just on paper.
+        Fifty beats a second, every device locked in step. A live frequency trace you can trip a power station on — and the minute-by-minute anatomy of the Friday in 2019 when it dipped to 48.8 Hz and stopped the trains.
       </p>
-      <div class="post-source">NESO CP30 plan · ENA build data · DESNZ</div>
+      <div class="post-source">NESO 9 August 2019 technical report</div>
     </div>
- 
-    <div class="post-card draft" style="position: relative; overflow: hidden;">
-      <div class="big-num">?</div>
-      <div class="post-meta" style="position: relative; z-index: 1;">
-        <span class="post-num">№ 12+</span>
-        <span class="post-status">○ Suggest one</span>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 12</span>
+        <span class="post-status coming">○ Coming soon</span>
       </div>
-      <h3 class="post-title" style="position: relative; z-index: 1;">What should come next?</h3>
-      <p class="post-blurb" style="position: relative; z-index: 1;">
-        The series wraps at twelve, but there's plenty more in the data worth surfacing. If there's
-        a question you keep wishing someone had a chart for — say so.
+      <h3 class="post-title">The rulebook behind <em>£90 billion</em>.</h3>
+      <p class="post-blurb">
+        Every pylon in this series gets built under one obscure five-year settlement: RIIO-T3, just started. What it funds, what the three grid operators are trying to achieve — and the digital grid being built quietly alongside the steel one.
       </p>
-      <div class="post-source" style="position: relative; z-index: 1;">DM on LinkedIn</div>
+      <div class="post-source">Ofgem RIIO-3 Final Determinations · TO business plans</div>
     </div>
- 
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 13</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">Where does the wind go when <em>nobody needs it</em>?</h3>
+      <p class="post-blurb">
+        A windy night simulator: storage fills, exports max out, and the rest gets paid to switch off. Plus the duration gap — batteries last hours, Britain's wind droughts last weeks.
+      </p>
+      <div class="post-source">NESO · DESNZ LDES scheme</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 14</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">AI is <em>hungry</em>.</h3>
+      <p class="post-blurb">
+        Twenty years of falling demand just ended. Data centres, the digital-life calculator that proves it isn't your streaming, and where the gigawatt campuses are landing.
+      </p>
+      <div class="post-source">DUKES · NESO FES · IEA</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 15</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The heat pump maths, done <em>honestly</em>.</h3>
+      <p class="post-blurb">
+        Two sliders — your gas bill and a real-world efficiency — and a live verdict. Including the awkward truth: the price ratio that decides everything is a policy choice, not physics.
+      </p>
+      <div class="post-source">Ofgem cap rates · Energy Systems Catapult field trials</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 16</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">They built the whole thing in <em>five years</em>.</h3>
+      <p class="post-blurb">
+        1928: no national grid, no precedent, no diggers. 1933: 26,000 pylons and 4,000 miles of line — faster than we now consent a single route. The honest version of how, and what it would take to move like that again.
+      </p>
+      <div class="post-source">CEB records · the 1928 design competition</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 17</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The most expensive insurance <em>Britain buys</em>.</h3>
+      <p class="post-blurb">
+        Most of the nuclear fleet retires this decade. The retirement cliff timeline, the £46bn giant, the SMR promise — and a switch that removes nuclear from a windless January week.
+      </p>
+      <div class="post-source">EDF · Great British Energy Nuclear · ONR</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 18</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The spy on your wall that <em>isn't</em>.</h3>
+      <p class="post-blurb">
+        What a smart meter actually transmits, the tariff explorer that shows who genuinely saves, and the honest list of what the rollout got wrong.
+      </p>
+      <div class="post-source">DESNZ smart meter statistics · Smart Energy Code</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 19</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">You've walked past one <em>your whole life</em>.</h3>
+      <p class="post-blurb">
+        A field guide to Britain's most ignored structure. Click the pylon to decode it — how to read a line's voltage from the ground, what the orange balls do, and why it hums in the rain.
+      </p>
+      <div class="post-source">National Grid · the 1928 design competition</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 20</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">One day in <em>2040</em>.</h3>
+      <p class="post-blurb">
+        The Volume I finale. Everything the previous nineteen posts built, switched on together in one ordinary home on one ordinary Tuesday — plus the three things that could make it wrong.
+      </p>
+      <div class="post-source">NESO FES · the whole series</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">★ Special</span>
+        <span class="post-status coming">○ This summer</span>
+      </div>
+      <h3 class="post-title">The day electricity cost <em>less than nothing</em>.</h3>
+      <p class="post-blurb">
+        Negative prices, the solar midday mountain, and why your supplier might pay you to run the dishwasher. Publishing during the first proper heatwave of the summer.
+      </p>
+      <div class="post-source">Elexon · NESO · a sunny windy Saturday</div>
+    </div>
+
+  </div>
+
+  <div class="section-heading">
+    <h2>Volume II — watching it being built</h2>
+    <span class="count">13 posts + specials · from late September</span>
+  </div>
+
+  <div class="posts">
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 21</span>
+        <span class="post-status coming">○ Late September</span>
+      </div>
+      <h3 class="post-title">The largest rotating machines <em>ever built</em>.</h3>
+      <p class="post-blurb">
+        Blades longer than a football pitch, tips faster than a Formula 1 car — and a record auction that just bought 8.4GW more of them. Volume II opens with the hardware.
+      </p>
+      <div class="post-source">DESNZ AR7 results · manufacturer specs</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 22</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The room that runs <em>Britain</em>.</h3>
+      <p class="post-blurb">
+        A day inside NESO’s control centre — the 6am forecast, the teatime crunch, the 2am wind surplus, and the most invisible essential job in the country.
+      </p>
+      <div class="post-source">NESO · Elexon balancing data</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 23</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">What happens to <em>the pipes</em>?</h3>
+      <p class="post-blurb">
+        280,000km of gas pipe under Britain, facing the opposite question to the electricity grid. The hydrogen verdict, the cancelled trials, and the endgame nobody has planned.
+      </p>
+      <div class="post-source">National Gas · the four gas networks</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 24</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The islands that run <em>themselves</em>.</h3>
+      <p class="post-blurb">
+        Eigg has a household power cap and a red warning light in the community hall — and it has all worked since 2008. The islands reached the future first.
+      </p>
+      <div class="post-source">Eigg Electric · EMEC Orkney</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 25</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">Britain’s biggest machines go <em>electric</em>.</h3>
+      <p class="post-blurb">
+        Port Talbot’s new furnace melts steel with an artificial lightning bolt and draws a town’s worth of power doing it. The loud, lumpy half of the demand turn.
+      </p>
+      <div class="post-source">Tata Steel · Network Rail · ORR</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 26</span>
+        <span class="post-status coming">○ Winter Outlook day</span>
+      </div>
+      <h3 class="post-title">How worried should you be <em>this winter</em>?</h3>
+      <p class="post-blurb">
+        Published the day NESO’s Winter Outlook lands. What a margin actually is, what the scary notices really mean, and the honest answer to the headline question.
+      </p>
+      <div class="post-source">NESO Winter Outlook 2026/27</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 27</span>
+        <span class="post-status coming">○ Before the clocks change</span>
+      </div>
+      <h3 class="post-title">The hour that <em>moves</em>.</h3>
+      <p class="post-blurb">
+        On Sunday the clocks go back and the evening peak sharpens overnight. A wartime coal shortage, a forgotten three-year experiment, and a century-old argument.
+      </p>
+      <div class="post-source">Elexon · the Summer Time Act 1916</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 28</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The green box on <em>your street</em>.</h3>
+      <p class="post-blurb">
+        It is humming quietly, a few metres from where you park, turning 11,000 volts into your kettle’s 230. A field guide to the street furniture you’ve never once looked at.
+      </p>
+      <div class="post-source">ENA · DNO asset guides</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 29</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">Your car, the <em>power station</em>.</h3>
+      <p class="post-blurb">
+        The first £24k car with vehicle-to-grid as standard shipped this year. The maths on a million plugged-in cars — a distributed Dinorwig, parked on every street.
+      </p>
+      <div class="post-source">Octopus · Nissan G99 · Kia</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 30</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The map of <em>everything</em>.</h3>
+      <p class="post-blurb">
+        For the first time since the CEGB, Britain is drawing a national energy map — where everything should go, out to 2050. What landed this year, what slipped, and why it matters.
+      </p>
+      <div class="post-source">NESO SSEP · CSNP · regional plans</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 31</span>
+        <span class="post-status coming">○ Coming soon</span>
+      </div>
+      <h3 class="post-title">The Drax <em>question</em>.</h3>
+      <p class="post-blurb">
+        Britain’s biggest power station burns wood shipped from American forests — officially, renewably. Both sides of the most contested question in UK energy, made properly.
+      </p>
+      <div class="post-source">Drax · DESNZ · the scientific critics</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 32</span>
+        <span class="post-status coming">○ When the first storm hits</span>
+      </div>
+      <h3 class="post-title">The storm <em>playbook</em>.</h3>
+      <p class="post-blurb">
+        Helicopters at first light, convoys of crews, a triage list older than the internet. What actually happens when a storm takes the network down — published during one.
+      </p>
+      <div class="post-source">DNO storm reports · Ofgem Arwen review</div>
+    </div>
+
+    <div class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">№ 33</span>
+        <span class="post-status coming">○ December</span>
+      </div>
+      <h3 class="post-title">The restart <em>button</em>.</h3>
+      <p class="post-blurb">
+        By 31 December, Britain must legally be able to restart the entire grid from cold — everyone back within five days. The most extraordinary procedure in the playbook.
+      </p>
+      <div class="post-source">NESO ESRS · Distributed ReStart</div>
+    </div>
+
+
+    <a href="grid-in-focus-christmas-special.html" class="post-card draft">
+      <div class="post-meta">
+        <span class="post-num">★ Special</span>
+        <span class="post-status coming">○ This Christmas</span>
+      </div>
+      <h3 class="post-title">The turkey <em>peak</em>.</h3>
+      <p class="post-blurb">
+        Every other day, Britain's grid peaks at teatime. Christmas Day is the one exception. Twenty-four hours of family life, as the grid sees it — the turkey peak, the King's broadcast, and the greenest day of the year. Built and ready; refreshes with live data on the day.
+      </p>
+      <div class="post-source">National Grid · NESO festive briefings</div>
+    </a>
   </div>
 
   <!-- ABOUT -->
@@ -678,10 +964,14 @@
     </div>
     <div class="about-body">
       <p>
-        I work in the UK energy sector and spend a lot of my time helping colleagues and clients
-        navigate datasets. Whilst that is confidential, there is a wealth of data in the public domain.
-        This series will bring that publicly available data to life, so you don't have to. Built in the open,
-        designed to be readable in the time it takes to drink half a coffee.
+        I work in the UK energy sector and spend a lot of my time helping colleagues
+        navigate the same datasets — NESO publications, ENA portals, Ofgem reports — that I'm
+        going to surface here. The questions they ask are usually variations of "what does the data
+        actually say?", and the honest answer is "it takes a while to find out."
+      </p>
+      <p>
+        <strong>This series is the version of those answers I wish existed.</strong> Built in the open,
+        live-wired to source data, designed to be readable in the time it takes to drink half a coffee.
       </p>
       <p>
         Each post lands on LinkedIn first. The full interactive dashboards live here.
