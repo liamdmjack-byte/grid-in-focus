@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One day in 2040 — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+.tnn{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px}
+.tnn th{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);text-align:left;padding:16px 18px;border-bottom:2px solid var(--ink);background:var(--paper-warm)}
+.tnn td{padding:14px 18px;border-bottom:1px solid var(--rule);color:var(--ink-soft);vertical-align:top;line-height:1.5;background:var(--paper-warm)}
+.tnn td:first-child{font-family:'Fraunces',serif;font-weight:500;color:var(--ink);white-space:nowrap}
+.tnn td:nth-child(3){background:rgba(196,69,28,.04)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  #day-grid{grid-template-columns:repeat(3,1fr) !important}#series-index{grid-template-columns:1fr !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 20 · Volume I finale · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">One day in <em>2040.</em></h1>
+  <p class="standfirst reveal">The series finale. Everything the last nineteen posts built — the wires, the storage, the tariffs, the pylons nobody looks at — switched on together, in one ordinary home, on one ordinary Tuesday fourteen years from now.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Posts in the series</div>
+      <div class="stat-value">20</div>
+      <div class="stat-detail">Plus the specials</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Electricity demand by 2050</div>
+      <div class="stat-value">~2<span class="unit">x</span></div>
+      <div class="stat-detail">Roughly double today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Target clean share</div>
+      <div class="stat-value">95<span class="unit">%+</span></div>
+      <div class="stat-detail">Weather-powered, storage-balanced</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The year imagined below</div>
+      <div class="stat-value">2040</div>
+      <div class="stat-detail">Close enough to plan, far enough to dream</div>
+    </div>
+  </div>
+
+
+  <!-- FIG 01: A DAY IN 2040 -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">One day in 2040 — tap through it</h2>
+    <p class="section-blurb">
+      Not science fiction — every technology below exists today, somewhere in this series. This is just all of it, switched on at once, in an ordinary home on an ordinary Tuesday.
+    </p>
+    <div class="btn-grid" id="day-grid" style="grid-template-columns:repeat(6,1fr)"></div>
+    <div class="detail-panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div style="font-family:'Fraunces',serif;font-weight:500;font-size:24px" id="day-title"></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent)" id="day-grid-state"></div>
+      </div>
+      <div style="font-size:15px;color:var(--ink-soft);line-height:1.7" id="day-body"></div>
+      <div style="margin-top:14px;padding:12px 16px;background:rgba(196,69,28,.06);border-left:2px solid var(--accent);font-size:13px;color:var(--ink-soft)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);display:block;margin-bottom:4px">Covered in</span>
+        <span id="day-ref"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIG 02: THEN / NOW / 2040 -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02</div>
+    <h2 class="section-title">Then, now, next</h2>
+    <p class="section-blurb">The same system, three snapshots apart. The middle column is the one this series has been documenting — the awkward, expensive, fascinating in-between.</p>
+    <div class="chart-frame" style="padding:0;overflow-x:auto">
+      <table class="tnn">
+        <thead><tr><th></th><th>2000</th><th>2026 — now</th><th>2040</th></tr></thead>
+        <tbody>
+          <tr><td>Where power comes from</td><td>Coal and gas, a few big stations</td><td>Half renewables, gas balancing, coal gone</td><td>Wind-led, solar, nuclear baseload, gas as rare backup</td></tr>
+          <tr><td>Which way it flows</td><td>One way: station → home</td><td>Both ways, awkwardly — the grid is being rebuilt for it</td><td>Every direction — homes, cars and batteries all trade</td></tr>
+          <tr><td>Your role</td><td>Pay the bill</td><td>Pick a tariff, maybe shift the wash</td><td>Your home trades automatically; you just set preferences</td></tr>
+          <tr><td>The car</td><td>Petrol</td><td>1 in 4 new cars electric, charging mostly dumb</td><td>A battery on wheels earning money while parked</td></tr>
+          <tr><td>Heating</td><td>Gas boiler</td><td>Gas boiler, heat pumps growing</td><td>Heat pumps the default, running on cheap windy hours</td></tr>
+          <tr><td>The bill's enemy</td><td>Privatised inefficiency</td><td>Gas prices setting the marginal price</td><td>Whether we built enough storage and wires</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">What the series was really about</div>
+    <div class="insight-text">
+      Twenty posts later, the thesis is simple: the energy transition is not a technology story. The technology mostly exists. It is a building story — wires, planning rows, supply chains, training colleges — and building is the thing modern Britain finds hardest. Whether 2040 looks like the day above depends on almost nothing invented after today.
+    </div>
+  </div>
+
+  <!-- FIG 03: HONEST UNCERTAINTIES + INDEX -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Three things that could make this wrong</h2>
+    <div class="cards-3 reveal-children" style="margin-bottom:56px">
+      <div class="gif-card" style="border-top-color:var(--warn)">
+        <div class="gif-card-name">The build rate</div>
+        <div class="gif-card-type">The unfinished build-out</div>
+        <div class="gif-card-body">Everything above assumes the 2030s build at a pace the 2020s have not yet proven. If transmission slips and the workforce gap stays red, 2040 looks like 2032's plans, delayed — gas hangs on, bills stay hostage to it, and the constraint bill keeps growing.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">The demand surprise</div>
+        <div class="gif-card-type">AI changed the forecast once already</div>
+        <div class="gif-card-body">Five years ago no forecast had AI demand in it. Something else will do the same to today's forecasts — bigger AI, new industries, electrified everything arriving faster or slower than planned. Double-by-2050 is the planning assumption, not a promise.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c2)">
+        <div class="gif-card-name">The politics</div>
+        <div class="gif-card-type">The 60-year asset problem</div>
+        <div class="gif-card-body">Grids are built across decades; governments change across years. A sustained political reversal — on targets, on planning reform, on who pays — would slow everything in this series. The physics is settled. The consensus is not guaranteed.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Volume I — complete</div>
+    <h2 class="section-title">Twenty posts, one grid — and the story continues below</h2>
+    <div class="series-index" id="series-index"></div>
+  </div>
+  <div class="callout" style="border-left-color:var(--accent);margin-top:48px">
+    <div class="callout-label">Volume II begins late September</div>
+    <div class="callout-text">
+      Volume I explained the grid. <strong>Volume II watches it being built</strong> — through one real year of events. The machines from January’s record auction. A day inside the room that runs Britain. The Winter Outlook, decoded on the day it lands. The first storms, the strange question of the gas pipes, your car becoming a power station, and a legal deadline — the last day of this year — by which Britain must be able to restart a dead grid from cold. Thirteen new posts, the specials, and a year-end reckoning in charts. Same place, same dashboards, new story. See you in a fortnight.
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>The 2040 day.</strong> A scenario, clearly labelled as one — every element uses technology operating somewhere today, scaled per NESO Future Energy Scenarios holistic-transition-style pathways. <strong>Demand doubling.</strong> NESO FES range for 2050 electricity demand under electrification pathways. <strong>The uncertainties.</strong> The author’s honest list, consistent with the № 12 look at RIIO-T3. Thank you for reading the series — every post remains live at gridinfocus.co.uk.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+const HOURS=[
+  {t:'6am',icon:'\ud83c\udf05',title:'6am \u2014 The house wakes first',state:'Grid: calm \u00b7 wind-rich \u00b7 prices low',
+   body:'The heat pump has been warming the house since 4am \u2014 not because anyone set an alarm, but because the overnight wind was cheap and the home\u2019s system bought it. The car finished charging at 3:12am, when prices bottomed out. The hot water tank is full for the same reason. Nobody in the house knows any of this happened.',
+   ref:'Heat pumps (\u2116 15) \u00b7 Smart tariffs (\u2116 18) \u00b7 Storage (\u2116 13)'},
+  {t:'9am',icon:'\ud83d\udcbb',title:'9am \u2014 The commute that didn\u2019t move',state:'Grid: morning ramp \u00b7 solar rising',
+   body:'Work happens at home and in the AI tools humming in a data centre campus in a designated growth zone, sited next to the wind farm that powers it. The morning peak still exists \u2014 kettles are eternal \u2014 but it is shallower than 2026\u2019s: millions of homes quietly deferred their flexible loads past it without anyone lifting a finger.',
+   ref:'Data centres (\u2116 14) \u00b7 Demand flexibility (World Cup Special)'},
+  {t:'1pm',icon:'\u2600\ufe0f',title:'1pm \u2014 The solar mountain',state:'Grid: oversupplied \u00b7 prices negative',
+   body:'A bright, breezy lunchtime and the grid is drowning in power. Prices have gone negative \u2014 the house is being paid to charge everything it owns. The EV soaks it up, the home battery tops off, the immersion heater runs. What 2026 curtailed and wasted, 2040 absorbs \u2014 because the storage finally got built.',
+   ref:'Storage (\u2116 13) \u00b7 Negative prices (Summer Special) \u00b7 The heartbeat (\u2116 11)'},
+  {t:'6pm',icon:'\ud83c\udf73',title:'6pm \u2014 The peak that pays you',state:'Grid: evening peak \u00b7 homes exporting',
+   body:'Teatime \u2014 still the day\u2019s crunch. But tonight the house is not buying: it is selling. The car and home battery discharge the cheap lunchtime solar back into the street at peak prices, covering the oven and then some. Multiply by ten million homes and the evening peak \u2014 the monster every post in this series orbited \u2014 is partly powered by itself.',
+   ref:'The substation question (\u2116 9) \u00b7 LCTs on your street (\u2116 7)'},
+  {t:'9pm',icon:'\ud83c\udf0c',title:'9pm \u2014 The quiet trade',state:'Grid: settling \u00b7 wind picking up',
+   body:'The house reviews its day in a notification nobody reads: bought 14kWh cheap, sold 6kWh dear, net cost pennies. The pylons of Post 19 carry Scottish wind south through the lines the 2020s fought planning battles over. The interconnectors of Post 8 are exporting the surplus to a still evening in the Netherlands.',
+   ref:'Interconnectors (\u2116 8) \u00b7 Pylons (\u2116 19) \u00b7 Five years (\u2116 16)'},
+  {t:'2am',icon:'\ud83c\udf19',title:'2am \u2014 The system breathes',state:'Grid: storm inbound \u00b7 storing hard',
+   body:'A front sweeps in off the Atlantic. In 2026 this was a constraint-payment night \u2014 wind farms paid to stop. In 2040 it is harvest: pumped hydro pumps, batteries drink, electrolysers and long-duration stores absorb the rest. The nuclear fleet \u2014 the giants and the small reactors that finally arrived \u2014 idles along beneath it all, insurance for the still week that will come in January.',
+   ref:'Nuclear (\u2116 17) \u00b7 Storage (\u2116 13) \u00b7 Constraint costs (\u2116 9)'},
+];
+let activeHour=0;
+function buildDayGrid(){
+  const grid=document.getElementById('day-grid');
+  HOURS.forEach((hr,i)=>{
+    const b=document.createElement('button');
+    b.className='gif-btn'+(i===0?' active':'');
+    b.innerHTML=`<div class="gif-btn-icon">${hr.icon}</div><div class="gif-btn-label">${hr.t}</div>`;
+    b.addEventListener('click',()=>selectHour(i));
+    grid.appendChild(b);
+  });
+}
+function selectHour(i){
+  activeHour=i;
+  document.querySelectorAll('#day-grid .gif-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  const hr=HOURS[i];
+  document.getElementById('day-title').textContent=hr.title;
+  document.getElementById('day-grid-state').textContent=hr.state;
+  document.getElementById('day-body').textContent=hr.body;
+  document.getElementById('day-ref').textContent=hr.ref;
+}
+buildDayGrid();selectHour(0);
+
+const SERIES=[
+  ['\u2116 1','The queue for the grid','Connections reform and the 700GW question','generation-mix.html'],
+  ['\u2116 2','Mapping the reform','The TMO4+ visualisation','connections-queue.html'],
+  ['\u2116 3','The deliverability question','Supply chain, access, resource, consenting','future-energy-scenarios.html'],
+  ['\u2116 4','Britain, live','Demand and carbon, hour by hour','demand.html'],
+  ['\u2116 5','The price control','RIIO and who pays for the grid','balancing-costs.html'],
+  ['\u2116 6','Down your street','The distribution networks','your-distribution-insights.html'],
+  ['\u2116 7','The quiet revolution','EVs and heat pumps arrive','low-carbon-connections.html'],
+  ['\u2116 8','The cables under the sea','Interconnector geopolitics','wires-under-the-sea.html'],
+  ['\u2116 9','Ten years to build a pylon','Substations, planning and constraint costs','building-new-infrastructure.html'],
+  ['\u2116 10','The 400,000','The workforce that has to build it','workforce-outlook.html'],
+  ['\u2116 11','The grid\u2019s heartbeat','50Hz, and the day it dipped to 48.8','heartbeat.html'],
+  ['\u2116 12','The \u00a390bn rulebook','RIIO-T3 and what the grid operators must build','riiot3.html'],
+  ['\u2116 13','Where the wind goes','Storage and the dunkelflaute','storage.html'],
+  ['\u2116 14','AI is hungry','Data centres and the demand turn','datacentres.html'],
+  ['\u2116 15','The heat pump maths','Done honestly','heatpumps.html'],
+  ['\u2116 16','Five years','How Britain built the first grid','firstgrid.html'],
+  ['\u2116 17','The nuclear question','The most expensive insurance Britain buys','nuclear.html'],
+  ['\u2116 18','The spy that isn\u2019t','Smart meters, honestly','smartmeters.html'],
+  ['\u2116 19','A field guide to pylons','Britain\u2019s most ignored structure','pylons.html'],
+  ['\u2116 20','One day in 2040','This post',null],
+];
+function buildIndex(){
+  const c=document.getElementById('series-index');
+  c.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule)';
+  SERIES.forEach(s=>{
+    const here=s[3]===null;
+    const d=document.createElement(here?'div':'a');
+    if(!here){d.href=s[3];d.style.textDecoration='none';}
+    d.style.cssText+=';padding:14px 18px;border-bottom:1px solid var(--rule);display:flex;gap:14px;align-items:baseline;background:var(--paper-warm);color:inherit;transition:background .18s';
+    if(here){d.style.background='var(--ink)';}
+    d.innerHTML=`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${here?'var(--accent-soft)':'var(--accent)'};white-space:nowrap;padding-top:2px">${s[0]}</span>
+      <span style="flex:1"><strong style="font-family:'Fraunces',serif;font-weight:500;font-size:15px;color:${here?'var(--paper)':'var(--ink)'}">${s[1]}</strong>
+      <span style="display:block;font-size:12px;color:${here?'rgba(244,241,234,.55)':'var(--ink-muted)'}">${s[2]}${here?' \u00b7 you are here':''}</span></span>
+      ${here?'':'<span style="font-family:Fraunces,serif;font-style:italic;color:var(--accent);font-size:16px;align-self:center">\u2192</span>'}`;
+    if(!here){
+      d.addEventListener('mouseenter',()=>d.style.background='var(--paper)');
+      d.addEventListener('mouseleave',()=>d.style.background='var(--paper-warm)');
+    }
+    c.appendChild(d);
+  });
+}
+buildIndex();
+setTimeout(hideLoaders,400);
+window.CHART_DRAWERS={};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

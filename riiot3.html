@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The £90 billion rulebook — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  #riio-grid{grid-template-columns:repeat(2,1fr) !important}#to-grid{grid-template-columns:1fr !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 12 · RIIO-T3 · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">The rulebook behind <em>£90 billion.</em></h1>
+  <p class="standfirst reveal">Every pylon in this series gets built under one obscure five-year settlement between Ofgem and the companies that own the grid. RIIO-T3 just started. Here is what it funds, what the three operators are trying to achieve — and the digital grid being built quietly alongside the steel one.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">RIIO-T3 runs</div>
+      <div class="stat-value">2026<span class="unit">–31</span></div>
+      <div class="stat-detail">Five years, from 1 April 2026</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Upfront funding approved</div>
+      <div class="stat-value">£28<span class="unit">bn</span></div>
+      <div class="stat-detail">Across the RIIO-3 sectors</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Wider investment pipeline</div>
+      <div class="stat-value">~£90<span class="unit">bn</span></div>
+      <div class="stat-detail">Over the period, uncertainty mechanisms included</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Power the grid must carry</div>
+      <div class="stat-value">~2<span class="unit">x</span></div>
+      <div class="stat-detail">Nearly double today's transfer capability</div>
+    </div>
+  </div>
+
+
+  <!-- FIG 01: WHAT RIIO MEANS -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">What the letters actually mean</h2>
+    <p class="section-blurb">
+      RIIO is the rulebook that decides how much the companies owning Britain's pylons are allowed to spend and earn over five years. The name is an equation, and each letter is a lever Ofgem pulls. Tap each one to see what it controls — and why T3 turns every dial up at once.
+    </p>
+    <div class="btn-grid" id="riio-grid" style="grid-template-columns:repeat(4,1fr)"></div>
+    <div class="detail-panel" id="riio-detail">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:12px">
+        <div style="font-family:'Fraunces',serif;font-weight:700;font-size:40px;color:var(--accent);line-height:1" id="rd-letter">R</div>
+        <div style="font-family:'Fraunces',serif;font-weight:500;font-size:24px" id="rd-word">Revenue</div>
+      </div>
+      <div style="font-size:15px;color:var(--ink-soft);line-height:1.7" id="rd-body"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The shift in one sentence</div>
+    <div class="insight-text">
+      For thirty years the regulator's job was holding network spending down. RIIO-T3 is the first price control written for the opposite problem: getting tens of billions out the door fast enough, without letting the bill run away. The whole framework has been re-tuned from braking to accelerating.
+    </div>
+  </div>
+
+  <!-- FIG 02: WHERE THE MONEY GOES -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Interactive</div>
+    <h2 class="section-title">What the three operators are trying to build</h2>
+    <p class="section-blurb">
+      Three companies own Britain's transmission grid, and T3 hands each a once-in-a-generation budget. Their plans rhyme: connect the wind, rebuild the spine, and — the part that gets no headlines — turn the grid into something that can be run from data rather than site visits. Tap each operator.
+    </p>
+    <div class="btn-grid" id="to-grid" style="grid-template-columns:repeat(3,1fr)"></div>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Loading plans</div>
+        <div class="chart-loader-source">RIIO-T3 business plans · Ofgem FD</div>
+      </div>
+      <svg id="to-chart" viewBox="0 0 1100 300"></svg>
+      <div id="to-detail" style="margin-top:14px;padding:16px 20px;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--accent);font-size:14px;color:var(--ink-soft);line-height:1.65"></div>
+    </div>
+  </div>
+
+  <!-- FIG 03: THE DIGITAL LAYER -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">The grid you can't see being built</h2>
+    <p class="section-blurb">
+      The pylons get the attention. But buried inside the business plans is a quieter ambition: for the first time, Ofgem funded data and digitalisation as a named line item, not an afterthought. You cannot double the grid with twice the people — so the operators are betting on running it with software instead.
+    </p>
+    <div class="cards-3 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">Data as a product</div>
+        <div class="gif-card-type">The cultural shift</div>
+        <div class="gif-card-body">The operators are moving off spreadsheets toward treating every asset record as a governed, quality-scored "data product" with a named owner. It sounds like back-office plumbing. It is the precondition for everything else: you cannot let an algorithm decide which transformer to replace if you do not trust the data describing the transformer. Ofgem now makes meeting its Data Best Practice rules a condition of funding.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">The digital twin</div>
+        <div class="gif-card-type">Run it before you build it</div>
+        <div class="gif-card-body">A live virtual model of the network, fed by sensors, that lets engineers test a switching plan or a new connection on the computer before touching the real thing. For a grid adding more in five years than the last twenty, simulating first is how you avoid learning expensive lessons live. This is the territory of the knowledge agents and live-data tools this series keeps circling.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c2)">
+        <div class="gif-card-name">Condition-based everything</div>
+        <div class="gif-card-type">From calendar to sensor</div>
+        <div class="gif-card-body">The old way: inspect and replace assets on a fixed schedule. The T3 way: instrument them, watch the data, and intervene when the asset actually needs it — extending life where it is safe and acting early where it is not. Done well it releases capacity from the existing grid without pouring a single new foundation — the cheapest gigawatts in the plan.</div>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">The number nobody campaigns about</div>
+      <div class="callout-text">
+        In the Final Determinations, Ofgem allowed National Grid Electricity Transmission around £317m for data and digitalisation and £117m for network innovation across the five years — a rounding error against the tens of billions of steel and cable, but the first time the digital layer has been ring-fenced and scrutinised line by line. The bet is that this small slice is what makes the enormous one deliverable.
+      </div>
+    </div>
+  </div>
+
+  <!-- FIG 04: HONEST TENSIONS -->
+  <div class="section reveal">
+    <div class="section-label">Figure 04</div>
+    <h2 class="section-title">The arguments still live</h2>
+    <p class="section-blurb">A price control is a negotiated settlement, not a love-in. Three tensions that did not vanish when the ink dried.</p>
+    <div class="cards-3 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c4)">
+        <div class="gif-card-name">Investable enough?</div>
+        <div class="gif-card-type">The returns fight</div>
+        <div class="gif-card-body">Ofgem set the allowed return on equity well above RIIO-2 levels, reflecting the sheer scale of investment it wants. The companies pushed for more, warning that global capital has other places to go. Final allowances landed up on the draft but still below what the operators asked. Whether the number is "investable and workable" is exactly the phrase National Grid used — and is still testing.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c5)">
+        <div class="gif-card-name">Who carries the risk?</div>
+        <div class="gif-card-type">Uncertainty mechanisms</div>
+        <div class="gif-card-body">With ~£90bn of possible spend but far less locked down upfront, much of T3 sits behind "uncertainty mechanisms" — money released only as projects firm up. Sensible for bill-payers, but it pushes risk and timing onto the operators and their supply chains, the workforce squeeze of Post 10. The framework's flexibility is also its source of friction.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">Will the bill bite?</div>
+        <div class="gif-card-type">The consumer question</div>
+        <div class="gif-card-body">All of this lands, eventually, in the network slice of the bill from Post 6. The wager is that spending now to connect cheap wind lowers bills later by cutting the constraint costs and gas dependence this series has documented. The honest caveat: "later" is doing a lot of work, and the spending is certain while the saving is forecast.</div>
+      </div>
+    </div>
+  </div>
+
+<style>
+.keep-reading{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.kr-card{display:block;padding:18px 20px;background:var(--paper-warm);border:1px solid var(--rule);border-top:3px solid var(--accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.kr-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,24,18,.08)}
+.kr-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px}
+.kr-title{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.35}
+.kr-go{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);margin-top:10px}
+@media(max-width:700px){.keep-reading{grid-template-columns:1fr}}
+</style>
+  <div class="section" style="margin-top:64px">
+    <div class="section-label">Keep reading</div>
+    <h2 class="section-title" style="font-size:26px">More from The Grid in Focus</h2>
+    <div class="keep-reading">
+    <a class="kr-card" href="building-new-infrastructure.html">
+      <span class="kr-num">№ 9</span>
+      <span class="kr-title">Why the grid takes a decade to build</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="workforce-outlook.html">
+      <span class="kr-num">№ 10</span>
+      <span class="kr-title">The 400,000 people problem</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="your-distribution-insights.html">
+      <span class="kr-num">№ 6</span>
+      <span class="kr-title">Who runs your bit of the grid?</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Framework and funding.</strong> Ofgem RIIO-3 Final Determinations, published 4 December 2025, covering electricity transmission, gas transmission and gas distribution for 1 April 2026 to 31 March 2031; ~£28bn upfront totex approved within a wider pipeline of c.£90bn; licence modifications finalised February 2026. <strong>Digitalisation allowances.</strong> NGET Final Determination: ~£317m data &amp; digitalisation and ~£117.5m network innovation (NIA) allowed. <strong>Operator programmes.</strong> Indicative scales from the three transmission owners' published RIIO-T3 business plans (NGET; SSEN Transmission ~£29bn; SP Energy Networks ~£12bn) — figures are approximate and span differing scopes. <strong>Returns.</strong> Allowed cost of equity stepped up materially from RIIO-2; final allowances rose from Draft Determinations but remained below companies' requests. The three TOs' joint "Moving the Grid Forward" campaign sets out the shared case.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+const RIIO=[
+  {l:'R',word:'Revenue',body:'The total the network company is allowed to collect from bill-payers over five years \u2014 the cap on the whole thing. Everything else in RIIO is about how that number is set and what the company must do to earn it. In T3 the number is bigger than ever before, because the job is bigger than ever before.'},
+  {l:'I',word:'Incentives',body:'Rewards and penalties that nudge behaviour. Hit your reliability and connection targets and you keep more; miss them, or overspend against an efficient benchmark, and you lose. T3 sharpens the incentives around delivering on time \u2014 including a new reward-only mechanism for operators who find genuinely innovative, efficient ways to build.'},
+  {l:'I',word:'Innovation',body:'Ring-fenced funding to try things that might fail \u2014 new construction methods, digital tools, ways to squeeze more capacity from existing lines. The second "I" exists because a regulator that only ever rewards safe choices gets a grid that never improves. T3 keeps a dedicated innovation allowance alongside the main budget.'},
+  {l:'O',word:'Outputs',body:'What the company must actually deliver for the money: connections energised, reliability maintained, environmental and safety standards met, customers served. Funding is tied to outputs, not effort \u2014 the point is results on the ground, not money spent. T3 adds the toughest delivery outputs the sector has seen, because Clean Power 2030 depends on them.'},
+];
+function buildRiio(){
+  const g=document.getElementById('riio-grid');
+  RIIO.forEach((r,i)=>{
+    const b=document.createElement('button');
+    b.className='gif-btn'+(i===0?' active':'');
+    b.innerHTML=`<div style="font-family:'Fraunces',serif;font-weight:700;font-size:30px;line-height:1;color:${i===0?'var(--accent-soft)':'var(--accent)'}" class="riio-letter">${r.l}</div><div class="gif-btn-label" style="margin-top:6px">${r.word}</div>`;
+    b.addEventListener('click',()=>selRiio(i));
+    g.appendChild(b);
+  });
+}
+function selRiio(i){
+  document.querySelectorAll('#riio-grid .gif-btn').forEach((b,j)=>{
+    b.classList.toggle('active',j===i);
+    const L=b.querySelector('.riio-letter');if(L)L.style.color=j===i?'var(--accent-soft)':'var(--accent)';
+  });
+  const r=RIIO[i];
+  document.getElementById('rd-letter').textContent=r.l;
+  document.getElementById('rd-word').textContent=r.word;
+  document.getElementById('rd-body').textContent=r.body;
+}
+buildRiio();selRiio(0);
+
+const TOS=[
+  {key:'nget',name:'National Grid (NGET)',region:'England & Wales',color:'var(--c1)',
+   headline:'The spine of the system',
+   body:'Owns and operates the high-voltage grid across England and Wales \u2014 the bulk of the network and the busiest connections queue. Its T3 job is the eastern and western reinforcements that carry Scottish and offshore wind south to where demand sits, the substations of Post 9, and a data-and-digitalisation programme Ofgem funded at around \u00a3317m. The phrase from its own response: a framework that has to be both investable and workable.'},
+  {key:'ssen',name:'SSEN Transmission',region:'North of Scotland',color:'var(--c3)',
+   headline:'Connecting the wind first',
+   body:'Runs the network across the north of Scotland and the islands \u2014 where the wind is, and where generation capacity is set to roughly double across the period. Its ~\u00a329bn programme is the most connection-driven of the three, and it has leaned hardest on data: it credits a formal "data trust" approach, meeting Ofgem\u2019s Data Best Practice rules, with helping win approval for the spend at all.'},
+  {key:'spen',name:'SP Energy Networks',region:'Central & southern Scotland',color:'var(--c2)',
+   headline:'The rewiring programme',
+   body:'Owns transmission across central and southern Scotland (and distribution further south). Its T3 is a ~\u00a312bn "rewiring" of the central belt grid, and it moved early \u2014 spending a few million on digital enabler projects before the period even began, so the data foundations were in place on day one rather than year three.'},
+];
+let activeTO=0;
+function buildTO(){
+  const g=document.getElementById('to-grid');
+  TOS.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='gif-btn'+(i===0?' active':'');
+    b.innerHTML=`<div class="gif-btn-label" style="font-size:11px">${t.name}</div><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-muted);margin-top:4px;text-transform:none">${t.region}</div>`;
+    b.addEventListener('click',()=>{activeTO=i;
+      document.querySelectorAll('#to-grid .gif-btn').forEach((x,j)=>x.classList.toggle('active',j===i));
+      if(window.CHART_DRAWERS['to-chart'].done)drawTO();
+    });
+    g.appendChild(b);
+  });
+}
+buildTO();
+
+function drawTO(){
+  const t=TOS[activeTO];
+  // illustrative programme scale (relative, £bn) for the three
+  const data=[
+    {name:'National Grid (NGET)',v:35,key:'nget'},
+    {name:'SSEN Transmission',v:29,key:'ssen'},
+    {name:'SP Energy Networks',v:12,key:'spen'},
+  ];
+  const svg=d3.select('#to-chart');
+  const W=1100,H=300,margin={top:40,right:120,bottom:40,left:230};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+  const y=d3.scaleBand().domain(data.map(d=>d.name)).range([0,h]).padding(.4);
+  const x=d3.scaleLinear().domain([0,40]).range([0,w]);
+  const tooltip=d3.select('#chart-tooltip');
+  g.append('g').attr('class','grid').call(d3.axisBottom(x).tickSize(h).tickFormat(''));
+  data.forEach((d,i)=>{
+    const on=d.key===t.key;
+    const c=TOS.find(x=>x.key===d.key).color;
+    g.append('rect').attr('x',0).attr('y',y(d.name)).attr('height',y.bandwidth()).attr('width',0)
+      .attr('fill',c).attr('opacity',on?.95:.35)
+      .style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html(`<strong>${d.name}</strong><br>~\u00a3${d.v}bn programme (indicative)`)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)})
+      .transition().duration(650).delay(i*90).attr('width',x(d.v));
+    g.append('text').attr('x',x(d.v)+10).attr('y',y(d.name)+y.bandwidth()/2+5)
+      .style('font-family','Fraunces, serif').style('font-size','17px').style('font-weight','600')
+      .style('fill',on?'var(--ink)':'var(--ink-muted)').text('~\u00a3'+d.v+'bn');
+  });
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).tickSize(0).tickPadding(10)).select('.domain').remove();
+  g.selectAll('.axis text').style('font-family','Inter Tight, sans-serif').style('font-size','12.5px').style('font-weight','500').style('fill','var(--ink)');
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>'\u00a3'+d+'bn'));
+  g.append('text').attr('x',0).attr('y',-18)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+    .text('Indicative RIIO-T3 programme scale by operator (\u00a3bn)');
+  document.getElementById('to-detail').innerHTML=`<strong style="font-family:'Fraunces',serif;font-size:16px;color:var(--ink)">${t.headline}.</strong> ${t.body}`;
+}
+window.CHART_DRAWERS={'to-chart':{fn:drawTO,done:false}};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){
+    // hide unless the touch is on an element that sets its own tooltip
+    hide();
+  },{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  // auto-hide after a few seconds in case leave never fires
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

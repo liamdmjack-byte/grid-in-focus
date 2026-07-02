@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Drax question — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 31 · Volume II · Biomass, honestly · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">The Drax <em>question.</em></h1>
+  <p class="standfirst reveal">Britain's biggest power station burns wood shipped three thousand miles from American forests — and officially, it is the country's biggest source of renewable power. Whether that sentence makes sense is one of the most genuinely contested questions in British energy. Both cases, made properly.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Britain's biggest power station</div>
+      <div class="stat-value">1</div>
+      <div class="stat-detail">Drax, North Yorkshire</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">What it burns</div>
+      <div class="stat-value">~7<span class="unit">m t/yr</span></div>
+      <div class="stat-detail">Wood pellets, mostly shipped from the US</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Of UK renewable power, some years</div>
+      <div class="stat-value">~10<span class="unit">%+</span></div>
+      <div class="stat-detail">Counted as renewable. There's the argument.</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The deal changes</div>
+      <div class="stat-value">2027</div>
+      <div class="stat-detail">Subsidies roughly halved, new role</div>
+    </div>
+  </div>
+
+
+  <div class="section reveal">
+    <div class="section-label">Figure 01</div>
+    <h2 class="section-title">The journey of a pellet</h2>
+    <p class="section-blurb">
+      Drax was built in the 1970s to burn coal from the pit next door. Today it burns compressed wood pellets — millions of tonnes a year, most of it crossing the Atlantic from the forests of the American South. Follow the journey, then we'll argue about it properly.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Tracing the supply chain</div>
+        <div class="chart-loader-source">Drax annual reporting · pellet supply data</div>
+      </div>
+      <svg id="pellet-chart" viewBox="0 0 1100 300"></svg>
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Interactive</div>
+    <h2 class="section-title">One tonne of wood, two worldviews — flip between them</h2>
+    <p class="section-blurb">
+      Here is the genuinely strange thing: both sides of the biomass argument agree on the physics. Burning wood releases carbon — slightly more per unit of electricity than coal, at the chimney. The entire fight is about how you account for it. Press each worldview and read both fairly.
+    </p>
+    <div class="btn-grid" id="world-grid" style="grid-template-columns:repeat(2,1fr)"></div>
+    <div class="detail-panel">
+      <div style="font-family:'Fraunces',serif;font-weight:500;font-size:23px;margin-bottom:10px" id="wv-title"></div>
+      <div style="font-size:15px;color:var(--ink-soft);line-height:1.7" id="wv-body"></div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">Where the honest middle sits</div>
+      <div class="callout-text">
+        The serious scientific position is uncomfortable for both camps: the accounting can work, but only if the forests are genuinely regrowing, the timescales are honest, and the wood would not have stored more carbon left alone — conditions that are hard to verify across an ocean and that vary pellet by pellet. "Renewable" is doing a lot of work in the phrase "renewable power station," and how much work it can bear is a judgement, not a fact. This series can show you the argument; it cannot settle it. Nobody can yet.
+      </div>
+    </div>
+  </div>
+
+  <div class="insight reveal-left">
+    <div class="insight-label">Why the grid keeps it around anyway</div>
+    <div class="insight-text">
+      Set the carbon argument aside for one paragraph and Drax is something rare: a huge, controllable power station in exactly the right place — the kind of dispatchable capacity the tight winter evenings of Post 26 are counted in. The system question and the climate question pull in different directions, which is precisely why the answer became a compromise.
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">The 2027 deal — and the bet behind it</h2>
+    <div class="cards-3 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">The old deal</div>
+        <div class="gif-card-type">Until 2027</div>
+        <div class="gif-card-body">Drax converted from coal on generous renewable subsidies — running near-baseload, burning pellets around the clock, paid for every unit. It kept the lights on through the coal phase-out and became one of the most subsidised power stations in the country. Both of those things are true at once.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">The new deal</div>
+        <div class="gif-card-type">2027 onwards</div>
+        <div class="gif-card-body">From 2027 the support roughly halves and the role flips: Drax becomes a low-load backstop — running far less, mainly when the system is tight, with stricter sustainability rules on what it burns. Less wood, less subsidy, less running — kept alive specifically for the still, dark evenings this series keeps returning to.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c5)">
+        <div class="gif-card-name">The bet</div>
+        <div class="gif-card-type">BECCS</div>
+        <div class="gif-card-body">Drax's endgame is bolting carbon capture onto biomass — BECCS — so that growing the wood absorbs carbon and burning it captures carbon: negative emissions, on paper. If it works at scale it becomes climate infrastructure; if it does not, the accounting argument above gets louder. It is one of the biggest engineering-meets-accounting bets in British energy, and it is still just that — a bet.</div>
+      </div>
+    </div>
+  </div>
+
+<style>
+.keep-reading{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.kr-card{display:block;padding:18px 20px;background:var(--paper-warm);border:1px solid var(--rule);border-top:3px solid var(--accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.kr-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,24,18,.08)}
+.kr-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px}
+.kr-title{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.35}
+.kr-go{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);margin-top:10px}
+@media(max-width:700px){.keep-reading{grid-template-columns:1fr}}
+</style>
+  <div class="section" style="margin-top:64px">
+    <div class="section-label">Keep reading</div>
+    <h2 class="section-title" style="font-size:26px">More from The Grid in Focus</h2>
+    <div class="keep-reading">
+    <a class="kr-card" href="generation-mix.html">
+      <span class="kr-num">№ 1</span>
+      <span class="kr-title">What is actually powering Britain right now?</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="nuclear.html">
+      <span class="kr-num">№ 17</span>
+      <span class="kr-title">The nuclear question</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="storage.html">
+      <span class="kr-num">№ 13</span>
+      <span class="kr-title">Where the wind goes</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Scale.</strong> Drax: ~2.6 GW biomass units, typically the single largest power station output in GB; pellet consumption ~7m tonnes/yr per company reporting, majority sourced from the US South. <strong>The 2027 arrangement.</strong> Government/Drax agreement (2025): support from 2027 at roughly half previous levels under a low-load regime with tightened sustainability criteria, bridging toward a potential BECCS investment decision. <strong>The argument.</strong> Both worldviews are presented as their proponents make them; chimney-level emissions intensity, land-sector accounting under IPCC conventions, forest inventory trends and the scientific criticism (including open letters to governments) are all real and cited in the post body. This post takes no side and says so. Bills and subsidy-cost framing are deliberately out of scope (see № 5).</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+function drawPellet(){
+  const svg=d3.select('#pellet-chart');
+  const W=1100,H=300;
+  svg.selectAll('*').remove();
+  const g=svg.append('g');
+  const y=160;
+  const stops=[
+    {x:90,icon:'🌲',label:'US South forests',sub:'Working pine forests, residues & roundwood — the contested bit'},
+    {x:300,icon:'🏭',label:'Pellet mills',sub:'Dried, compressed, energy spent doing both'},
+    {x:520,icon:'🚢',label:'The Atlantic',sub:'~6,000 km by bulk carrier'},
+    {x:740,icon:'🚂',label:'Immingham → rail',sub:'Dedicated port terminal & trains'},
+    {x:960,icon:'⚡',label:'Drax, Yorkshire',sub:'Burned within days — pellets spoil'},
+  ];
+  for(let i=0;i<stops.length-1;i++){
+    g.append('line').attr('x1',stops[i].x+34).attr('x2',stops[i].x+34).attr('y1',y).attr('y2',y)
+      .attr('stroke','var(--rule)').attr('stroke-width',2.5)
+      .transition().duration(400).delay(i*220).attr('x2',stops[i+1].x-34);
+  }
+  const tooltip=d3.select('#chart-tooltip');
+  stops.forEach((s,i)=>{
+    const grp=g.append('g').style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html('<strong>'+s.label+'</strong><br>'+s.sub)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)});
+    grp.append('circle').attr('cx',s.x).attr('cy',y).attr('r',0).attr('fill','var(--paper)')
+      .attr('stroke','var(--accent)').attr('stroke-width',2)
+      .transition().duration(300).delay(i*220).attr('r',28);
+    grp.append('text').attr('x',s.x).attr('y',y+8).attr('text-anchor','middle').style('font-size','22px')
+      .style('opacity',0).text(s.icon)
+      .transition().delay(i*220+150).duration(250).style('opacity',1);
+    g.append('text').attr('x',s.x).attr('y',i%2?y-48:y+58).attr('text-anchor','middle')
+      .style('font-family','Inter Tight, sans-serif').style('font-size','12px').style('font-weight','500').style('fill','var(--ink)')
+      .text(s.label);
+    g.append('text').attr('x',s.x).attr('y',i%2?y-34:y+74).attr('text-anchor','middle')
+      .style('font-family','JetBrains Mono, monospace').style('font-size','8px').style('fill','var(--ink-muted)')
+      .text(s.sub.length>42?s.sub.slice(0,42)+'…':s.sub);
+  });
+  g.append('text').attr('x',90).attr('y',40)
+    .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+    .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+    .text('Forest to furnace — hover each stage');
+}
+
+const WORLDS=[
+  {icon:'🌱',name:'The case for',title:'Worldview one: the forest is a battery',
+   body:'Trees absorb carbon growing; burning releases it; replanted forests absorb it again. If the forest landscape as a whole holds steady or grows — which US South inventory data broadly shows — the cycle is closed and the carbon at the chimney is balanced by carbon being drawn down across millions of regrowing acres. International carbon accounting counts it in the land sector at harvest precisely to avoid double-counting, not as a fiddle. On this view, pellets from working forests displace coal with a closable loop, and Drax kept the lights on through the coal exit with it. Supporters include the official frameworks of most governments.'},
+  {icon:'⏳',name:'The case against',title:'Worldview two: the timescale is the trick',
+   body:'A tonne of carbon leaves the chimney today; the replacement tree takes decades to reabsorb it — and the climate fight is being lost on exactly those decades. Counting the emissions "elsewhere" (in another country\u2019s land-sector ledger) means nobody experiences them as a cost. Critics — including many hundreds of scientists in open letters — argue whole trees that would have kept storing carbon are being burned under rules written for sawmill scraps, and that "carbon neutral at the chimney" is an accounting convention, not an atmospheric fact. On this view the subsidy bought emissions reductions on paper and a carbon pulse in the sky.'},
+];
+function buildWorlds(){
+  const g=document.getElementById('world-grid');
+  WORLDS.forEach((w,i)=>{
+    const b=document.createElement('button');
+    b.className='gif-btn'+(i===0?' active':'');
+    b.innerHTML='<div class="gif-btn-icon">'+w.icon+'</div><div class="gif-btn-label">'+w.name+'</div>';
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#world-grid .gif-btn').forEach((x,j)=>x.classList.toggle('active',j===i));
+      document.getElementById('wv-title').textContent=w.title;
+      document.getElementById('wv-body').innerHTML=w.body;
+    });
+    g.appendChild(b);
+  });
+  document.getElementById('wv-title').textContent=WORLDS[0].title;
+  document.getElementById('wv-body').innerHTML=WORLDS[0].body;
+}
+buildWorlds();
+window.CHART_DRAWERS={'pellet-chart':{fn:drawPellet,done:false}};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){
+    // hide unless the touch is on an element that sets its own tooltip
+    hide();
+  },{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  // auto-hide after a few seconds in case leave never fires
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

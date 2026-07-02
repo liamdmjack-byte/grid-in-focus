@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A field guide to pylons — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  .pylon-grid{grid-template-columns:1fr !important}.pylon-grid .detail-panel{position:static !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 19 · A field guide to pylons · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">You’ve walked past one <em>your whole life.</em></h1>
+  <p class="standfirst reveal">There are tens of thousands of them and you have never really looked at one. A field guide to Britain's most ignored structure: how to read its voltage from the ground, what the orange balls are for, and why it hums when it rains.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Transmission pylons in England &amp; Wales</div>
+      <div class="stat-value">~22,000</div>
+      <div class="stat-detail">Plus thousands more in Scotland</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The standard design dates from</div>
+      <div class="stat-value">1928</div>
+      <div class="stat-detail">Chosen by competition</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Top operating voltage</div>
+      <div class="stat-value">400<span class="unit">kV</span></div>
+      <div class="stat-detail">1,700x your plug socket</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">First new design in a century</div>
+      <div class="stat-value">2021</div>
+      <div class="stat-detail">The T-pylon, Somerset</div>
+    </div>
+  </div>
+
+
+  <!-- FIG 01: CLICKABLE PYLON -->
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">Click the pylon</h2>
+    <p class="section-blurb">
+      Every part of a pylon is a decision. Tap the glowing points to decode it — including the trick that lets you read a line's voltage from the ground, and what the giant orange balls near airfields are for.
+    </p>
+    <div class="chart-frame">
+      <div style="display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:28px;align-items:start" class="pylon-grid">
+        <svg id="pylon-svg" viewBox="0 0 360 520" style="max-width:420px"></svg>
+        <div class="detail-panel" style="position:sticky;top:20px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px" id="py-tag">Field guide</div>
+          <div style="font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin-bottom:10px" id="py-title">Tap a glowing point</div>
+          <div style="font-size:14px;color:var(--ink-soft);line-height:1.65" id="py-body">Each orange point on the pylon is a clickable part. Start with the insulators — they are the ones that let you read the voltage.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT -->
+  <div class="insight reveal-left">
+    <div class="insight-label">The 1928 competition</div>
+    <div class="insight-text">
+      The lattice pylon was chosen in 1928 by an architectural competition — judged partly on elegance. The winning design was praised for its lightness against the sky. Nearly a century later it is so familiar it has become invisible: the largest piece of public design in Britain that nobody looks at.
+    </div>
+  </div>
+
+  <!-- FIG 02: MYTHBUSTERS -->
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Click to reveal</div>
+    <h2 class="section-title">Four things everyone wonders and nobody asks</h2>
+    <p class="section-blurb">Tap each card for the answer.</p>
+    <div class="cards-2 reveal-children" id="myth-grid"></div>
+  </div>
+
+  <!-- FIG 03: LATTICE VS T -->
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">Old faithful and the newcomer</h2>
+    <p class="section-blurb">
+      In 2021 the first genuinely new pylon design in nearly a century went up in Somerset, carrying Hinkley Point C's power: the T-pylon. Shorter, tidier, no lattice — and surprisingly divisive.
+    </p>
+    <div class="cards-2 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">The lattice (1928)</div>
+        <div class="gif-card-type">~50m · steel truss · the classic</div>
+        <div class="gif-card-body">Strong, cheap, repairable with a spanner, and climbs like scaffolding for maintenance. The open lattice lets wind through, which is why it survives storms that fell trees. Its weakness was never engineering — it was the planning system of Post 9: people simply do not want new ones on the skyline.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">The T-pylon (2021)</div>
+        <div class="gif-card-type">~35m · single pole · the newcomer</div>
+        <div class="gif-card-body">A third shorter, with all six conductor bundles hung from two arms in a diamond arrangement. Designed to be calmer on the eye and faster to assemble. The honest scorecard: tidier in lowland landscapes, but it cannot carry as many circuits, costs more, and some engineers — and some locals — quietly prefer the original. Both will share the landscape for decades.</div>
+      </div>
+    </div>
+  </div>
+
+<style>
+.keep-reading{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.kr-card{display:block;padding:18px 20px;background:var(--paper-warm);border:1px solid var(--rule);border-top:3px solid var(--accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.kr-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,24,18,.08)}
+.kr-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px}
+.kr-title{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.35}
+.kr-go{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);margin-top:10px}
+@media(max-width:700px){.keep-reading{grid-template-columns:1fr}}
+</style>
+  <div class="section" style="margin-top:64px">
+    <div class="section-label">Keep reading</div>
+    <h2 class="section-title" style="font-size:26px">More from The Grid in Focus</h2>
+    <div class="keep-reading">
+    <a class="kr-card" href="building-new-infrastructure.html">
+      <span class="kr-num">№ 9</span>
+      <span class="kr-title">Why the grid takes a decade to build</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="firstgrid.html">
+      <span class="kr-num">№ 16</span>
+      <span class="kr-title">Five years: how Britain built its first grid</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="wires-under-the-sea.html">
+      <span class="kr-num">№ 8</span>
+      <span class="kr-title">The cables to Europe</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Counts and dates.</strong> National Grid operates roughly 22,000 transmission pylons in England &amp; Wales; the lattice design was selected by competition in 1928; the T-pylon entered service on the Hinkley Connection in 2021. <strong>Insulator counting.</strong> Disc counts per voltage are typical ranges and vary by design and pollution zone — a fine excuse to argue at the roadside. <strong>Health.</strong> Reflects the WHO and UK Health Security Agency assessments of low-frequency EMF evidence. <strong>Undergrounding costs.</strong> Typical transmission-level cost multiples from National Grid and IET studies; route-specific figures vary.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+const PARTS={
+  insulators:{tag:'The voltage trick',title:'Insulator strings',
+    body:'Those stacks of glass or porcelain discs hold the wires away from the steel \u2014 and they are the part you can read. More voltage needs more discs: roughly, a 400kV line carries around 19\u201323 discs per string, 275kV about 14\u201316, and a 132kV line about 9\u201310. Count the discs next time you are stuck in traffic: you are reading the grid\u2019s hierarchy from the roadside.'},
+  conductors:{tag:'The actual point',title:'Conductors',
+    body:'The wires themselves \u2014 usually aluminium around a steel core, because aluminium conducts well and weighs little. On 400kV lines they hang in bundles of two or four wires held apart by spacers: spreading the current over a bundle reduces losses and the crackle. Everything else on the pylon exists to keep these wires apart, aloft, and away from you.'},
+  earthwire:{tag:'The bodyguard',title:'The earth wire',
+    body:'The thin, easily-missed wire running along the very top carries no power. It is a lightning rod for the whole route: strikes hit it instead of the conductors and drain harmlessly down the steel to the ground. Modern earth wires hide a bonus \u2014 a fibre-optic core, meaning the grid\u2019s communications literally travel along the top of the pylons.'},
+  balls:{tag:'The orange balls',title:'Aircraft warning markers',
+    body:'Those giant orange spheres you sometimes see threaded onto lines near airfields and in valleys are aircraft warning markers \u2014 making near-invisible wires visible to low-flying pilots, especially helicopters and crop sprayers. They are hollow, about 60cm across, and installed by helicopter or by linesmen trolleying along the live line.'},
+  anticlimb:{tag:'Keep down',title:'Anti-climb guard',
+    body:'The skirt of barbed wire or spikes a few metres up. The danger is not touching the tower \u2014 the steel is earthed and safe, which is why birds perch on it happily. The danger is getting close to the conductors: at 400kV, electricity can arc across air to something approaching. The guard exists to keep people from getting anywhere near that distance.'},
+  foundations:{tag:'The hidden half',title:'Foundations',
+    body:'Each leg sits on its own concrete foundation \u2014 for a big 400kV tower, collectively reaching several metres down and weighing more than the visible steel. A pylon is a sail in a storm: the foundations are not just holding it up, they are holding it down against wind loads of many tonnes.'},
+};
+function drawPylon(){
+  const svg=d3.select('#pylon-svg');
+  svg.selectAll('*').remove();
+  const g=svg.append('g');
+  const steel='#5a5a5a';
+  // body outline (stylised lattice pylon)
+  const lines=[
+    // legs
+    [120,500,160,160],[240,500,200,160],
+    [120,500,200,160],[240,500,160,160], // cross brace big
+    // waist to peak
+    [160,160,172,60],[200,160,188,60],
+    [172,60,188,60],
+    // cross braces
+    [130,460,230,460],[136,420,224,420],[142,380,218,380],[148,340,212,340],
+    [154,300,206,300],[158,260,202,260],[160,220,200,220],[160,180,200,180],
+    // arms (3 levels each side)
+    [160,180,70,190],[200,180,290,190],
+    [158,250,55,262],[202,250,305,262],
+    [156,320,70,332],[204,320,290,332],
+    // arm braces
+    [70,190,160,160],[290,190,200,160],
+    [55,262,158,220],[305,262,202,220],
+    [70,332,156,290],[290,332,204,290],
+  ];
+  lines.forEach(l=>{
+    g.append('line').attr('x1',l[0]).attr('y1',l[1]).attr('x2',l[2]).attr('y2',l[3])
+      .attr('stroke',steel).attr('stroke-width',2.4).attr('stroke-linecap','round');
+  });
+  // inner lattice detail
+  for(let i=0;i<8;i++){
+    const y1=500-i*42.5,y2=500-(i+1)*42.5;
+    const w1=60-i*5,w2=60-(i+1)*5;
+    g.append('line').attr('x1',180-w1).attr('y1',y1).attr('x2',180+w2).attr('y2',y2).attr('stroke',steel).attr('stroke-width',1.1).attr('opacity',.55);
+    g.append('line').attr('x1',180+w1).attr('y1',y1).attr('x2',180-w2).attr('y2',y2).attr('stroke',steel).attr('stroke-width',1.1).attr('opacity',.55);
+  }
+  // earth wire
+  g.append('line').attr('x1',20).attr('y1',52).attr('x2',340).attr('y2',52).attr('stroke',steel).attr('stroke-width',1.4).attr('opacity',.8);
+  g.append('circle').attr('cx',180).attr('cy',56).attr('r',3.4).attr('fill',steel);
+  // insulator strings + conductors per arm
+  const arms=[[70,190],[290,190],[55,262],[305,262],[70,332],[290,332]];
+  arms.forEach(a=>{
+    for(let d=0;d<6;d++){
+      g.append('circle').attr('cx',a[0]).attr('cy',a[1]+8+d*7).attr('r',4).attr('fill','none').attr('stroke',steel).attr('stroke-width',1.6);
+    }
+    g.append('line').attr('x1',a[0]<180?0:a[0]).attr('y1',a[1]+56).attr('x2',a[0]<180?a[0]:360).attr('y2',a[1]+56)
+      .attr('stroke',steel).attr('stroke-width',1.6).attr('opacity',.85);
+  });
+  // aircraft ball on top-right line
+  g.append('circle').attr('cx',330).attr('cy',246+56-28).attr('r',9).attr('fill','var(--c5)').attr('opacity',.9);
+  // anti-climb
+  g.append('line').attr('x1',128,).attr('y1',440).attr('x2',232).attr('y2',440).attr('stroke','var(--ink)').attr('stroke-width',3).attr('stroke-dasharray','3,3');
+  // ground
+  g.append('line').attr('x1',60).attr('y1',502).attr('x2',300).attr('y2',502).attr('stroke','#8a8470').attr('stroke-width',2);
+  // foundations
+  [120,240].forEach(fx=>{
+    g.append('rect').attr('x',fx-14).attr('y',502).attr('width',28).attr('height',14).attr('fill','#a09880').attr('opacity',.6);
+  });
+  // hotspots
+  const HS=[
+    {id:'earthwire',x:180,y:48},
+    {id:'insulators',x:305,y:282},
+    {id:'conductors',x:40,y:388},
+    {id:'balls',x:330,y:274},
+    {id:'anticlimb',x:180,y:440},
+    {id:'foundations',x:120,y:508},
+  ];
+  HS.forEach(hsp=>{
+    const grp=g.append('g').style('cursor','pointer').on('click',()=>selectPart(hsp.id,grp));
+    grp.append('circle').attr('cx',hsp.x).attr('cy',hsp.y).attr('r',11).attr('fill','var(--accent)').attr('opacity',.18)
+      .append('animate').attr('attributeName','r').attr('values','11;15;11').attr('dur','2s').attr('repeatCount','indefinite');
+    grp.append('circle').attr('cx',hsp.x).attr('cy',hsp.y).attr('r',6).attr('fill','var(--accent)').attr('stroke','var(--paper-warm)').attr('stroke-width',2)
+      .attr('class','hs-dot').attr('data-part',hsp.id);
+  });
+}
+function selectPart(id){
+  const p=PARTS[id];
+  document.getElementById('py-tag').textContent=p.tag;
+  document.getElementById('py-title').textContent=p.title;
+  document.getElementById('py-body').textContent=p.body;
+  d3.selectAll('.hs-dot').attr('fill','var(--accent)').attr('r',6);
+  d3.selectAll('.hs-dot').filter(function(){return this.getAttribute('data-part')===id;}).attr('fill','var(--ink)').attr('r',8);
+}
+drawPylon();
+
+const MYTHS=[
+  {q:'Why do pylons hum \u2014 and buzz louder in the rain?',
+   a:'The crackle is corona discharge: air right at the wire surface ionising under the intense electric field. Rain makes it louder because water droplets on the conductor create sharp points where the field concentrates. It wastes a tiny amount of power, which is why conductors are bundled and polished smooth \u2014 the quieter the line, the better designed it is.'},
+  {q:'Why can birds sit on the wires without being fried?',
+   a:'Electricity needs a voltage difference to flow. A bird on one wire is at the same voltage as the wire \u2014 no difference, no current, no fried bird. The danger is touching two things at different voltages at once, which is why large birds like swans and raptors are the ones at risk: their wingspan can bridge gaps. Bird diverters \u2014 spirals and flappers on the earth wire \u2014 exist for exactly this.'},
+  {q:'Do pylons cause health problems?',
+   a:'This was studied intensively for decades \u2014 power lines produce low-frequency electromagnetic fields, and the question deserved serious science. The scientific consensus, reflected by the WHO and UK health authorities: no established mechanism and no consistent evidence of harm at the exposure levels near lines, which fall off very quickly with distance. The honest residual: a statistical question around childhood leukaemia studied since the 1970s remains unresolved at the margins, which is why exposure guidelines exist and lines keep their distance from homes.'},
+  {q:'Why not just bury all the cables?',
+   a:'You can \u2014 at roughly 5 to 10 times the cost, with a swathe of excavation the width of a motorway, harder fault repairs (days of digging versus hours up a tower), and cable that struggles to shed heat underground. It is genuinely the right answer in some places \u2014 and 10% of the contested Norwich\u2013Tilbury line was undergrounded after consultation (Post 9). As a national default, it would multiply the transmission bill several times over.'},
+];
+function buildMyths(){
+  const grid=document.getElementById('myth-grid');
+  MYTHS.forEach(m=>{
+    const card=document.createElement('div');
+    card.className='gif-card';
+    card.style.cursor='pointer';
+    card.innerHTML=`<div class="gif-card-name" style="font-size:17px">${m.q}</div>
+      <div class="gif-card-type reveal-tag" style="color:var(--accent)">Tap to reveal</div>
+      <div class="gif-card-body myth-answer" style="display:none">${m.a}</div>`;
+    card.addEventListener('click',()=>{
+      const ans=card.querySelector('.myth-answer');
+      const tag=card.querySelector('.reveal-tag');
+      const open=ans.style.display!=='none';
+      ans.style.display=open?'none':'block';
+      tag.textContent=open?'Tap to reveal':'Tap to hide';
+      card.style.borderTopColor=open?'var(--accent)':'var(--c3)';
+    });
+    grid.appendChild(card);
+  });
+}
+buildMyths();
+setTimeout(hideLoaders,400);
+window.CHART_DRAWERS={};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){hide();},{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 in charts — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">Year wrap · Volume II closes · 29 Dec 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">2026, in <em>charts.</em></h1>
+  <p class="standfirst reveal">The greenest hour. The record auction. The deadline for resurrecting a dead grid. The year demand turned upward for good — and the year this series grew from explaining the grid to watching it being built. Volume II closes here. The data never does.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Posts published this year</div>
+      <div class="stat-value">33<span class="unit">+4</span></div>
+      <div class="stat-detail">Two volumes and the specials</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The auction record</div>
+      <div class="stat-value">14.7<span class="unit">GW</span></div>
+      <div class="stat-detail">AR7 — the largest round ever</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">The deadline met (we trust)</div>
+      <div class="stat-value">31<span class="unit">Dec</span></div>
+      <div class="stat-detail">The restoration standard bites today-ish</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Dashboards still live</div>
+      <div class="stat-value">all</div>
+      <div class="stat-detail">Every chart in the series keeps updating</div>
+    </div>
+  </div>
+
+
+  <div class="section reveal">
+    <div class="section-label">Chart 01 — live</div>
+    <h2 class="section-title">The greenest grid yet — this year's carbon intensity</h2>
+    <p class="section-blurb">
+      The headline number of the whole transition: grams of CO₂ per unit of electricity. This chart pulls the live figures — the year Britain's grid was cleaner than it has ever been, including the greenest single hour in its history.
+    </p>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Pulling live 2026 data</div>
+        <div class="chart-loader-source">NESO Carbon Intensity API</div>
+      </div>
+      <svg id="ci-chart" viewBox="0 0 1100 320"></svg>
+      <div id="ci-note" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)"></div>
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Chart 02</div>
+    <h2 class="section-title">The records that fell</h2>
+    <div class="cards-3 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">Windiest moment</div>
+        <div class="gif-card-type">[TO UPDATE DEC]</div>
+        <div class="gif-card-body">The wind generation record fell again this year — as it has almost every year since this series began. The machines of № 21 keep arriving; the records keep falling. Final figure and date to be confirmed in the December edit.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c4)">
+        <div class="gif-card-name">Greenest hour</div>
+        <div class="gif-card-type">[TO UPDATE DEC]</div>
+        <div class="gif-card-body">At some point this year — probably a breezy, sunny spring afternoon — Britain's grid hit its lowest-ever carbon intensity. The exact hour gets its plaque here in the December edit, alongside what was generating during it.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c5)">
+        <div class="gif-card-name">The World Cup pickup</div>
+        <div class="gif-card-type">Summer 2026</div>
+        <div class="gif-card-body">The tournament gave the grid its biggest synchronised-kettle moments in years — the pickups the World Cup Special predicted, measured. How they compared with 1990's legendary record: the final reckoning lands here once the data settles.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight reveal-left">
+    <div class="insight-label">The quiet headline of 2026</div>
+    <div class="insight-text">
+      The loudest stories were the auction, the deadlines and the storms. The quiet one was structural: this was the year demand stopped falling and turned — the data centres of № 14, the furnaces of № 25, the heat pumps and chargers of № 7 finally outweighing decades of efficiency gains. The grid spent forty years managing decline. It now plans for growth, indefinitely. Almost nobody noticed the turn. It was the biggest story of the year.
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Chart 03</div>
+    <h2 class="section-title">What 2026 built — the year in milestones</h2>
+    <div class="chart-frame">
+      <div class="chart-loader" data-loader>
+        <div class="chart-loader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chart-loader-label">Laying out the year</div>
+        <div class="chart-loader-source">The series, passim</div>
+      </div>
+      <svg id="year-timeline" viewBox="0 0 1100 320"></svg>
+    </div>
+    <div class="callout">
+      <div class="callout-label">And next year — a taste of Volume III?</div>
+      <div class="callout-text">
+        2027 already has a spine: the next auction (AR8) carrying the heaviest expectations yet, the first full Strategic Spatial Energy Plan in the autumn (№ 30's story comes home), Drax's new deal beginning (№ 31), the first AR7 turbines entering construction, and the distribution networks' next price control taking shape. The grid does not pause for New Year. Neither, it turns out, does this series — see you in January. Volume III suggestions genuinely welcome.
+      </div>
+    </div>
+  </div>
+
+<style>
+.keep-reading{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.kr-card{display:block;padding:18px 20px;background:var(--paper-warm);border:1px solid var(--rule);border-top:3px solid var(--accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.kr-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,24,18,.08)}
+.kr-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px}
+.kr-title{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.35}
+.kr-go{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);margin-top:10px}
+@media(max-width:700px){.keep-reading{grid-template-columns:1fr}}
+</style>
+  <div class="section" style="margin-top:64px">
+    <div class="section-label">Keep reading</div>
+    <h2 class="section-title" style="font-size:26px">More from The Grid in Focus</h2>
+    <div class="keep-reading">
+    <a class="kr-card" href="finale.html">
+      <span class="kr-num">№ 20</span>
+      <span class="kr-title">One day in 2040 — the Volume I finale</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="machines.html">
+      <span class="kr-num">№ 21</span>
+      <span class="kr-title">The largest rotating machines ever built</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="generation-mix.html">
+      <span class="kr-num">№ 1</span>
+      <span class="kr-title">What is actually powering Britain right now?</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Year-end edit list.</strong> Built for publication 29 December 2026 with live API pulls where possible; items marked [TO UPDATE DEC] need final figures locked in before posting: monthly carbon intensity averages (if API coverage is partial), the wind generation record (value, date), the lowest-carbon hour (timestamp, mix), World Cup pickup magnitudes vs 1990, and the milestone timeline checked against how the autumn actually went (Winter Outlook tone, storms, the ESRS compliance announcement). <strong>Data.</strong> NESO Carbon Intensity API (live); Elexon for generation records; series posts as cited. <strong>The demand turn.</strong> Framing per № 14 and NESO demand outlooks.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+function drawCI(){
+  const svg=d3.select('#ci-chart');
+  const W=1100,H=320,margin={top:44,right:40,bottom:40,left:55};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform','translate('+margin.left+','+margin.top+')');
+  // try live API for recent months; fall back to representative values
+  const fallback=[145,138,120,98,85,92,88,95,110,125,140,150]; // [TO UPDATE DEC]
+  const months=['J','F','M','A','M','J','J','A','S','O','N','D'];
+  function render(vals,live){
+    const x=d3.scaleBand().domain(months.map((m,i)=>i)).range([0,w]).padding(.25);
+    const y=d3.scaleLinear().domain([0,200]).range([h,0]);
+    g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-w).tickFormat('').ticks(5));
+    vals.forEach((v,i)=>{
+      if(v==null)return;
+      g.append('rect').attr('x',x(i)).attr('width',x.bandwidth())
+        .attr('y',h).attr('height',0)
+        .attr('fill',v<100?'var(--c3)':(v<140?'var(--c4)':'var(--c5)')).attr('opacity',.85)
+        .transition().duration(500).delay(i*60).attr('y',y(v)).attr('height',h-y(v));
+      g.append('text').attr('x',x(i)+x.bandwidth()/2).attr('y',y(v)-6).attr('text-anchor','middle')
+        .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-soft)')
+        .style('opacity',0).text(Math.round(v))
+        .transition().delay(i*60+300).duration(250).style('opacity',1);
+    });
+    g.append('g').attr('class','axis').attr('transform','translate(0,'+h+')')
+      .call(d3.axisBottom(x).tickFormat(i=>months[i]));
+    g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(d=>d+'g'));
+    g.append('text').attr('x',0).attr('y',-18)
+      .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
+      .style('text-transform','uppercase').style('letter-spacing','.12em').style('fill','var(--ink-muted)')
+      .text('Average carbon intensity by month, 2026 — gCO\u2082/kWh');
+    document.getElementById('ci-note').textContent=live?'Live monthly averages via the NESO Carbon Intensity API.':'Representative values shown — switches to live API data automatically when viewed online. [TO UPDATE DEC: lock in final monthly averages]';
+  }
+  // attempt live fetch of monthly stats (intensity factors endpoint gives stats per range)
+  const reqs=[];
+  for(let m=0;m<12;m++){
+    const from='2026-'+String(m+1).padStart(2,'0')+'-01T00:00Z';
+    const toMonth=m===11?'2027-01-01':'2026-'+String(m+2).padStart(2,'0')+'-01';
+    reqs.push(fetch('https://api.carbonintensity.org.uk/intensity/stats/'+from+'/'+toMonth+'T00:00Z')
+      .then(r=>r.json()).then(d=>d.data&&d.data[0]?d.data[0].average:null).catch(()=>null));
+  }
+  Promise.all(reqs).then(vals=>{
+    const got=vals.filter(v=>v!=null).length;
+    render(got>=3?vals:fallback,got>=3);
+  }).catch(()=>render(fallback,false));
+}
+
+function drawYearTimeline(){
+  const events=[
+    {m:0.4,label:'Jan — AR7: record 8.4GW offshore (№ 21)',y:1},
+    {m:1.3,label:'Feb — AR7 total hits 14.7GW',y:-1},
+    {m:5.4,label:'Jun — network plan refresh · Kia EV2 ships V2G (№ 29,30)',y:1},
+    {m:6.2,label:'Summer — World Cup pickups · SSEP pathways chosen',y:-1},
+    {m:9.2,label:'Oct — Winter Outlook (№ 26) · clocks post (№ 27)',y:1},
+    {m:10.5,label:'Nov — storm season tests the playbook (№ 32)',y:-1},
+    {m:11.8,label:'31 Dec — restoration standard becomes law (№ 33)',y:1,big:true},
+  ];
+  const svg=d3.select('#year-timeline');
+  const W=1100,H=320,margin={top:50,right:60,bottom:40,left:40};
+  const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
+  svg.selectAll('*').remove();
+  const g=svg.append('g').attr('transform','translate('+margin.left+','+margin.top+')');
+  const x=d3.scaleLinear().domain([0,12]).range([0,w]);
+  const midY=h/2;
+  const tooltip=d3.select('#chart-tooltip');
+  g.append('line').attr('x1',0).attr('x2',w).attr('y1',midY).attr('y2',midY).attr('stroke','var(--rule)').attr('stroke-width',2);
+  const mlabels=['Jan','','Mar','','May','','Jul','','Sep','','Nov',''];
+  mlabels.forEach((m,i)=>{ if(m) g.append('text').attr('x',x(i+0.5)).attr('y',h+24).attr('text-anchor','middle')
+    .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-muted)').text(m); });
+  events.forEach((e,i)=>{
+    g.append('circle').attr('cx',x(e.m)).attr('cy',midY).attr('r',0)
+      .attr('fill',e.big?'var(--accent)':'var(--paper-warm)').attr('stroke','var(--accent)').attr('stroke-width',2)
+      .style('cursor','pointer')
+      .on('mouseenter',function(event){tooltip.classed('visible',true).html(e.label)})
+      .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
+      .on('mouseleave',function(){tooltip.classed('visible',false)})
+      .transition().duration(300).delay(i*130).attr('r',e.big?9:6);
+    g.append('text').attr('x',Math.min(Math.max(x(e.m),14),w-14))
+      .attr('y',e.y>0?midY-22-(i%2)*16:midY+34+(i%2)*16)
+      .attr('text-anchor',x(e.m)>w*.8?'end':(x(e.m)<w*.12?'start':'middle'))
+      .style('font-family','JetBrains Mono, monospace').style('font-size','8.5px').style('fill','var(--ink-soft)')
+      .style('opacity',0).text(e.label)
+      .transition().delay(i*130+200).duration(250).style('opacity',1);
+  });
+}
+window.CHART_DRAWERS={'ci-chart':{fn:drawCI,done:false},'year-timeline':{fn:drawYearTimeline,done:false}};
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){
+    // hide unless the touch is on an element that sets its own tooltip
+    hide();
+  },{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  // auto-hide after a few seconds in case leave never fires
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>

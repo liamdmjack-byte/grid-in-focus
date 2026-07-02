@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The islands that run themselves — The Grid in Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a1a; --ink-soft:#3d3d3d; --ink-muted:#6b6b6b;
+  --paper:#f4f1ea; --paper-warm:#ebe6db; --rule:#d4ccba;
+  --accent:#c4451c; --accent-soft:#e8a48a;
+  --c1:#4a7a8c; --c2:#7d5a8c; --c3:#6b8e4e; --c4:#e8b04b; --c5:#c4451c;
+  --good:#6b8e4e; --warn:#e8b04b; --bad:#c4451c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 15% 10%,rgba(196,69,28,.04) 0%,transparent 40%),radial-gradient(circle at 85% 60%,rgba(74,122,140,.04) 0%,transparent 40%);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+.container{max-width:1180px;margin:0 auto;padding:48px 32px 80px;position:relative;z-index:2}
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.series-mark{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:18px}
+.series-mark a{text-decoration:none;color:inherit}
+.series-mark span{font-style:normal;color:var(--accent)}
+.meta{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted)}
+.thin-rule{border:0;border-top:1px solid var(--rule);margin-bottom:56px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);text-decoration:none;margin-bottom:40px;padding:8px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
+.back-btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.back-btn::before{content:'\2190';font-family:'Fraunces',serif;font-style:italic;font-size:16px;transition:transform .2s}
+.back-btn:hover::before{transform:translateX(-4px)}
+.headline{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(36px,5.5vw,68px);line-height:1.02;letter-spacing:-.025em;margin-bottom:28px;max-width:22ch}
+.headline em{font-style:italic;font-weight:400;color:var(--accent)}
+.standfirst{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(17px,2.2vw,22px);line-height:1.45;color:var(--ink-soft);margin-bottom:64px;padding-left:24px;border-left:3px solid var(--accent)}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:72px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.stat{padding:28px 20px 28px 0;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat:not(:first-child){padding-left:20px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px}
+.stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.5vw,38px);line-height:1;letter-spacing:-.02em;margin-bottom:6px}
+.stat-value .unit{font-size:15px;color:var(--ink-muted);font-weight:400;margin-left:3px}
+.stat-detail{font-size:13px;color:var(--ink-muted)}
+.section{margin-bottom:72px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--accent)}
+.section-title{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;margin-bottom:12px}
+.section-blurb{font-size:15px;color:var(--ink-soft);margin-bottom:32px}
+.chart-frame{background:var(--paper-warm);border:1px solid var(--rule);padding:32px 24px 24px;position:relative}
+.chart-frame::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.chart-frame::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.chart-loader{position:absolute;inset:0;background:var(--paper-warm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:5;transition:opacity .45s ease}
+.chart-loader.hidden{opacity:0;pointer-events:none}
+.chart-loader-bars{display:flex;align-items:flex-end;gap:6px;height:40px}
+.chart-loader-bars span{display:block;width:8px;border-radius:1px;animation:bar-pulse 1.1s ease-in-out infinite;transform-origin:bottom}
+.chart-loader-bars span:nth-child(1){height:60%;background:var(--c1);animation-delay:0s}
+.chart-loader-bars span:nth-child(2){height:90%;background:var(--c2);animation-delay:.12s}
+.chart-loader-bars span:nth-child(3){height:45%;background:var(--c3);animation-delay:.24s}
+.chart-loader-bars span:nth-child(4){height:80%;background:var(--c4);animation-delay:.36s}
+.chart-loader-bars span:nth-child(5){height:55%;background:var(--c5);animation-delay:.48s}
+@keyframes bar-pulse{0%,100%{transform:scaleY(.35);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+.chart-loader-label{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft)}
+.chart-loader-label::after{content:'...';display:inline-block;width:1.2em;animation:dots 1.4s steps(4,end) infinite;overflow:hidden}
+@keyframes dots{0%{width:0}100%{width:1.2em}}
+.chart-loader-source{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--ink-muted)}
+.axis line,.axis path{stroke:var(--rule);shape-rendering:crispEdges}
+.grid line{stroke:var(--rule);stroke-dasharray:2,3;opacity:.6}
+.grid path{display:none}
+#chart-tooltip{position:fixed;background:var(--ink);color:var(--paper);padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;border:1px solid var(--accent);box-shadow:3px 3px 0 var(--accent);max-width:260px}
+#chart-tooltip.visible{opacity:1}
+.callout{background:var(--paper-warm);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:24px 28px;margin-top:32px}
+.callout-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+.callout-text{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;color:var(--ink)}
+.insight{background:var(--ink);color:var(--paper);padding:36px 40px;margin:72px 0;position:relative}
+.insight::before{content:'"';position:absolute;top:-20px;left:32px;font-family:'Fraunces',serif;font-size:120px;line-height:1;color:var(--accent);font-weight:900}
+.insight-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent-soft);margin-bottom:14px;margin-left:60px}
+.insight-text{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.4;margin-left:60px}
+.footer{margin-top:96px;padding-top:24px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-text{font-size:12px;color:var(--ink-muted);line-height:1.55}
+.footer-text strong{color:var(--ink)}
+.footer-text a{color:var(--accent);text-decoration:none}
+.byline{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink-soft);text-align:right}
+.byline strong{font-style:normal;font-weight:700;color:var(--ink);display:block;font-size:16px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-children>*{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-children.visible>*:nth-child(1){transition-delay:0s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(2){transition-delay:.10s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(3){transition-delay:.20s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(4){transition-delay:.30s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(5){transition-delay:.40s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(6){transition-delay:.50s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(7){transition-delay:.60s;opacity:1;transform:none}
+.reveal-children.visible>*:nth-child(8){transition-delay:.70s;opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+/* shared interactive bits */
+.dark-panel{background:var(--ink);color:var(--paper);padding:28px 32px}
+.dark-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent-soft);margin-bottom:6px}
+.dark-big{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.dark-big span{font-size:17px;color:var(--accent-soft);margin-left:4px}
+input[type=range].gif-range{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.2);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper)}
+input[type=range].gif-range-light{-webkit-appearance:none;width:100%;height:4px;background:var(--rule);outline:none;border-radius:2px;margin-top:10px}
+input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--paper-warm)}
+.range-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,241,234,.4)}
+.range-ends-light{display:flex;justify-content:space-between;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted)}
+.result-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:20px 24px;border-left:4px solid var(--accent)}
+.result-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(244,241,234,.5);margin-bottom:8px}
+.result-val{font-family:'Fraunces',serif;font-size:44px;font-weight:500;line-height:1;letter-spacing:-.02em;color:var(--accent-soft)}
+.result-sub{font-size:13px;color:rgba(244,241,234,.5);margin-top:8px;line-height:1.5}
+.btn-grid{display:grid;gap:0;border:1px solid var(--rule);overflow:hidden;margin-bottom:24px}
+.gif-btn{padding:16px 12px;background:var(--paper-warm);border:0;border-right:1px solid var(--rule);cursor:pointer;transition:background .2s;text-align:center;-webkit-appearance:none;appearance:none;color:var(--ink);font-family:inherit}
+.gif-btn:last-child{border-right:0}
+.gif-btn:hover{background:var(--paper)}
+.gif-btn.active{background:var(--ink);color:var(--paper)}
+.gif-btn-icon{font-size:22px;margin-bottom:6px}
+.gif-btn-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;line-height:1.3}
+.gif-btn.active .gif-btn-label{color:var(--accent-soft)}
+.detail-panel{border:1px solid var(--rule);background:var(--paper-warm);padding:28px 32px}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cards-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gif-card{background:var(--paper-warm);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:20px 22px}
+.gif-card-name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:4px}
+.gif-card-type{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:12px}
+.gif-card-body{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.rag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;font-weight:500}
+.rag::before{content:'';width:7px;height:7px;border-radius:50%}
+.rag.g{background:rgba(107,142,78,.14);color:#3d5e28}.rag.g::before{background:var(--good)}
+.rag.a{background:rgba(232,176,75,.18);color:#7a5c14}.rag.a::before{background:var(--warn)}
+.rag.r{background:rgba(196,69,28,.12);color:#8a2d0e}.rag.r::before{background:var(--bad)}
+
+@media(max-width:900px){
+  .container{padding:24px 18px 60px}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .stat{border-right:0;border-bottom:1px solid var(--rule);padding:18px 14px}
+  .stat:nth-child(odd){border-right:1px solid var(--rule)}
+  .stat:nth-child(3),.stat:nth-child(4){border-bottom:0}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .insight{padding:28px 24px}
+  .insight-text{margin-left:0;font-size:19px}
+  .insight-label{margin-left:0}
+  .insight::before{left:16px;font-size:80px}
+  #cap-toggles{grid-template-columns:1fr !important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="series-mark"><a href="index.html">The Grid <span>in Focus</span></a></div>
+    <div class="meta">№ 24 · Volume II · Island grids · 2026</div>
+  </div>
+  <hr class="thin-rule">
+  <a href="index.html" class="back-btn">Return to Home</a>
+
+  <h1 class="headline reveal">The islands that run <em>themselves.</em></h1>
+  <p class="standfirst reveal">On the Isle of Eigg, every household has a power cap, a red light warns when the island is running low — and it has all worked for eighteen years. Britain's island grids reached the future first. This is what they found there.</p>
+
+  <div class="stats-strip reveal-children">
+    <div class="stat">
+      <div class="stat-label">Eigg runs its own grid since</div>
+      <div class="stat-value">2008</div>
+      <div class="stat-detail">Built by the residents themselves</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Fair Isle had wind power from</div>
+      <div class="stat-value">1982</div>
+      <div class="stat-detail">Before most of the mainland</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Orkney generates</div>
+      <div class="stat-value">100<span class="unit">%+</span></div>
+      <div class="stat-detail">More renewable power than it uses</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Eigg's household power cap</div>
+      <div class="stat-value">5<span class="unit">kW</span></div>
+      <div class="stat-detail">Everyone, all the time</div>
+    </div>
+  </div>
+
+
+  <div class="section reveal">
+    <div class="section-label">Figure 01 — Interactive</div>
+    <h2 class="section-title">Three islands, three futures — tap each one</h2>
+    <p class="section-blurb">
+      Britain's islands hit the mainland's energy problems decades early — too far out, too expensive to connect, left to solve it themselves. What they built looks remarkably like where the whole country is now heading.
+    </p>
+    <div class="btn-grid" id="isle-grid" style="grid-template-columns:repeat(3,1fr)"></div>
+    <div class="detail-panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div style="font-family:'Fraunces',serif;font-weight:500;font-size:24px" id="is-title"></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent)" id="is-tag"></div>
+      </div>
+      <div style="font-size:15px;color:var(--ink-soft);line-height:1.7" id="is-body"></div>
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Figure 02 — Interactive</div>
+    <h2 class="section-title">A day on Eigg — try living under the cap</h2>
+    <p class="section-blurb">
+      On Eigg, every household lives with a 5 kW limit — go over it and your supply trips, and you walk to the generation shed to get reconnected. Toggle the appliances and see how quickly an ordinary evening approaches the line. This is demand flexibility not as an app notification but as a way of life.
+    </p>
+    <div class="dark-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:14px">
+        <div><div class="dark-label">Your draw right now</div><div class="dark-big"><span id="cap-val">0.3</span><span>kW of 5</span></div></div>
+        <div id="cap-light" style="width:64px;height:64px;border-radius:50%;background:var(--c3);border:4px solid rgba(255,255,255,.2);transition:background .3s"></div>
+      </div>
+      <div id="cap-toggles" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+    </div>
+    <div class="chart-frame" style="border-top:0">
+      <div id="cap-verdict" style="padding:6px 4px;font-size:14px;color:var(--ink-soft);line-height:1.65"></div>
+    </div>
+  </div>
+
+  <div class="insight reveal-left">
+    <div class="insight-label">Why this matters beyond the islands</div>
+    <div class="insight-text">
+      Everything this series has covered at national scale — curtailed wind, full cables, storage limits, demand flexibility — the islands lived first, at one ten-thousandth the size. They are not quaint outliers. They are the grid of 2035, already running, with the bugs being found by people who know each other's names.
+    </div>
+  </div>
+
+  <div class="section reveal">
+    <div class="section-label">Figure 03</div>
+    <h2 class="section-title">What the mainland is quietly borrowing</h2>
+    <div class="cards-3 reveal-children">
+      <div class="gif-card" style="border-top-color:var(--c1)">
+        <div class="gif-card-name">Live limits</div>
+        <div class="gif-card-type">From Orkney</div>
+        <div class="gif-card-body">Orkney's cable to the mainland filled up years ago — so instead of refusing new wind, engineers built one of the world's first "active network management" systems: generators connect with a live, flexible limit instead of waiting years for reinforcement. The connections reform of Post 1 and the flexible connections now offered across GB are this idea, scaled up ten-thousand-fold.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c3)">
+        <div class="gif-card-name">Storage as a citizen</div>
+        <div class="gif-card-type">From Eigg</div>
+        <div class="gif-card-body">Eigg's batteries are not a market participant chasing price spreads — they are the thing that keeps the lights on when the hydro burn slows. Watching a community treat storage as shared infrastructure rather than a trading asset is a preview of arguments the mainland will have about who batteries actually serve.</div>
+      </div>
+      <div class="gif-card" style="border-top-color:var(--c2)">
+        <div class="gif-card-name">Making fuel from surplus</div>
+        <div class="gif-card-type">From the northern isles</div>
+        <div class="gif-card-body">When you cannot export surplus electricity, you turn it into something else. Orkney has trialled using excess wind to make hydrogen for ferries and harbour use — the same soak-up-the-surplus logic behind the national storage and hydrogen questions of Posts 13 and 23, tested first where the cable ran out.</div>
+      </div>
+    </div>
+  </div>
+
+<style>
+.keep-reading{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.kr-card{display:block;padding:18px 20px;background:var(--paper-warm);border:1px solid var(--rule);border-top:3px solid var(--accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.kr-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(26,24,18,.08)}
+.kr-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:8px}
+.kr-title{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.35}
+.kr-go{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);margin-top:10px}
+@media(max-width:700px){.keep-reading{grid-template-columns:1fr}}
+</style>
+  <div class="section" style="margin-top:64px">
+    <div class="section-label">Keep reading</div>
+    <h2 class="section-title" style="font-size:26px">More from The Grid in Focus</h2>
+    <div class="keep-reading">
+    <a class="kr-card" href="storage.html">
+      <span class="kr-num">№ 13</span>
+      <span class="kr-title">Where the wind goes</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="low-carbon-connections.html">
+      <span class="kr-num">№ 7</span>
+      <span class="kr-title">The quiet revolution in your street</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    <a class="kr-card" href="your-distribution-insights.html">
+      <span class="kr-num">№ 6</span>
+      <span class="kr-title">Who runs your bit of the grid?</span>
+      <span class="kr-go">Read it →</span>
+    </a>
+    </div>
+  </div>
+
+
+
+  <div class="footer">
+    <div class="footer-text"><strong>Eigg.</strong> Eigg Electric: community-owned hydro/wind/solar/battery system, live February 2008; 5 kW residential cap (10 kW for businesses) as published by the trust. <strong>Fair Isle.</strong> Wind generation from 1982; 24-hour scheme with storage commissioned 2018 (National Trust for Scotland / Fair Isle Electricity Company). <strong>Orkney.</strong> Net renewable surplus and active network management per SSEN and Community Energy Scotland; tidal testing at EMEC; surplus-to-hydrogen trials including the Surf 'n' Turf and BIG HIT projects. Appliance ratings in the simulator are typical values. The islands' systems differ in detail from the simplified versions here — the post links the originals, who tell it best.</div>
+    <div class="byline">The Grid in Focus<br><strong>Liam Jack — Energy Networks</strong></div>
+  </div>
+</div>
+<div id="chart-tooltip"></div>
+<script>
+
+const ISLES=[
+  {icon:'🏝️',name:'Eigg',tag:'Pop. ~100 · off-grid since 2008',
+   body:'The mainland never connected Eigg — so in 2008 the residents built their own grid: a small hydro scheme, four wind turbines, solar, a battery bank and backup diesel that now barely runs. It was among the first systems in the world to combine all of them. The famous rule: every household capped at 5 kW. When renewable supply runs low, a red light in the community hall asks everyone to ease off — and everyone does, because the alternative is the diesel bill, and everybody knows it.'},
+  {icon:'💨',name:'Fair Isle',tag:'Pop. ~50 · wind pioneers',
+   body:'Britain\u2019s most remote inhabited island had wind power in 1982 — decades before the mainland took it seriously — because shipping diesel to the middle of the North Sea concentrates the mind. For years the island ran two separate circuits: a guaranteed one, and a cheap \u201cwhen the wind blows\u201d one for heating. In 2018 a new system with batteries finally gave Fair Isle 24-hour power. The lesson it taught early: match what you use to what the weather gives, and the economics transform.'},
+  {icon:'🌊',name:'Orkney',tag:'Pop. ~22,000 · the overachiever',
+   body:'Orkney generates more renewable electricity than it consumes — from wind, and from the tidal machines of the European Marine Energy Centre, where half the world\u2019s tidal stream energy has been tested. Its problem is the mainland\u2019s problem in miniature: the export cable is full. Orkney\u2019s answers — live managed connections, surplus-to-hydrogen trials, batteries everywhere — read like the table of contents of this series, written a decade earlier.'},
+];
+let activeIsle=0;
+function buildIsles(){
+  const g=document.getElementById('isle-grid');
+  ISLES.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='gif-btn'+(i===0?' active':'');
+    b.innerHTML='<div class="gif-btn-icon">'+s.icon+'</div><div class="gif-btn-label">'+s.name+'</div>';
+    b.addEventListener('click',()=>{activeIsle=i;
+      document.querySelectorAll('#isle-grid .gif-btn').forEach((x,j)=>x.classList.toggle('active',j===i));
+      document.getElementById('is-title').textContent=ISLES[i].name;
+      document.getElementById('is-tag').textContent=ISLES[i].tag;
+      document.getElementById('is-body').innerHTML=ISLES[i].body;
+    });
+    g.appendChild(b);
+  });
+  document.getElementById('is-title').textContent=ISLES[0].name;
+  document.getElementById('is-tag').textContent=ISLES[0].tag;
+  document.getElementById('is-body').innerHTML=ISLES[0].body;
+}
+buildIsles();
+
+const APPS=[
+  {id:'kettle',name:'Kettle',kw:3.0,icon:'☕'},
+  {id:'oven',name:'Oven',kw:2.2,icon:'🍞'},
+  {id:'wash',name:'Washing machine',kw:1.8,icon:'👕'},
+  {id:'heater',name:'Electric heater',kw:2.0,icon:'🔥'},
+  {id:'shower',name:'Electric shower',kw:4.0,icon:'🚿'},
+  {id:'tv',name:'TV + lights + fridge',kw:0.3,icon:'💡',always:true},
+];
+const onSet=new Set(['tv']);
+function buildCap(){
+  const c=document.getElementById('cap-toggles');
+  APPS.forEach(a=>{
+    const b=document.createElement('button');
+    b.className='gif-btn';
+    b.style.cssText='border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:var(--paper);display:flex;align-items:center;gap:10px;text-align:left;padding:10px 14px';
+    b.innerHTML='<span style="font-size:18px">'+a.icon+'</span><span style="font-family:Inter Tight,sans-serif;font-size:12px;text-transform:none;letter-spacing:0">'+a.name+' · '+a.kw+'kW'+(a.always?' (always on)':'')+'</span>';
+    function paint(){
+      const on=onSet.has(a.id);
+      b.style.background=on?'var(--accent)':'rgba(255,255,255,.05)';
+      b.style.borderColor=on?'var(--accent)':'rgba(255,255,255,.15)';
+    }
+    if(!a.always)b.addEventListener('click',()=>{ onSet.has(a.id)?onSet.delete(a.id):onSet.add(a.id); paint(); updateCap(); });
+    else b.style.opacity=.7;
+    paint();
+    c.appendChild(b);
+  });
+}
+function updateCap(){
+  let total=0; APPS.forEach(a=>{if(onSet.has(a.id))total+=a.kw;});
+  document.getElementById('cap-val').textContent=total.toFixed(1);
+  const light=document.getElementById('cap-light');
+  const v=document.getElementById('cap-verdict');
+  if(total>5){
+    light.style.background='var(--c5)';
+    v.innerHTML='<strong style="color:var(--accent)">Trip.</strong> You are over the 5 kW cap — on Eigg your supply has just cut out, and someone is putting their boots on to walk to the shed and reset it. The fix is not more grid; it is the kettle waiting two minutes for the shower to finish. Notice how quickly an ordinary evening gets there — and how easy the fix is.';
+  } else if(total>3.8){
+    light.style.background='var(--c4)';
+    v.innerHTML='<strong style="color:#7a5c14">Amber.</strong> Close to the line. On Eigg this is the moment you choose what waits — the same choice the World Cup Special showed the whole country making for money, made here as a habit. One more big appliance trips you.';
+  } else {
+    light.style.background='var(--c3)';
+    v.innerHTML='<strong style="color:var(--c3)">Comfortably green.</strong> Normal life fits under 5 kW with room to spare — the cap mostly bites when big appliances stack at once. The lesson the island learned in year one: it is not about using less, it is about not using everything simultaneously.';
+  }
+}
+buildCap();updateCap();
+window.CHART_DRAWERS={};
+setTimeout(hideLoaders,400);
+
+/* ── SHARED ── */
+function countUp(el,target,duration){
+  const start=Date.now();
+  (function tick(){
+    const p=Math.min((Date.now()-start)/duration,1);
+    const v=target*(1-Math.pow(1-p,3));
+    if(Math.abs(target)>=100) el.textContent=Math.round(v).toLocaleString();
+    else el.textContent=(v).toFixed(target%1===0?0:1);
+    if(p<1)requestAnimationFrame(tick);
+  })();
+}
+function hideLoaders(){
+  document.querySelectorAll('[data-loader]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('hidden'),i*120);
+    setTimeout(()=>{if(el.parentNode)el.remove();},i*120+600);
+  });
+}
+const revealObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('visible');revealObs.unobserve(e.target);});
+},{threshold:.1});
+document.querySelectorAll('.reveal,.reveal-left,.reveal-children').forEach(el=>revealObs.observe(el));
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.stat-value').forEach(el=>{
+      const node=el.childNodes[0];
+      const raw=(node.textContent||'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+      const val=parseFloat(raw);
+      if(!isNaN(val)&&String(val).length>=String(raw).length-1)countUp(node,val,1200);
+    });
+    statsObs.unobserve(e.target);
+  });
+},{threshold:.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statsObs.observe(strip);
+const chartObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const id=e.target.querySelector('svg') ? e.target.querySelector('svg').id : null;
+    if(id && window.CHART_DRAWERS && window.CHART_DRAWERS[id] && !window.CHART_DRAWERS[id].done){
+      window.CHART_DRAWERS[id].done=true;
+      window.CHART_DRAWERS[id].fn();
+      hideLoaders();
+    }
+    chartObs.unobserve(e.target);
+  });
+},{threshold:.15});
+document.querySelectorAll('.chart-frame').forEach(el=>chartObs.observe(el));
+/* ── global tooltip dismiss (touch + click safety net) ── */
+(function(){
+  const tip=document.getElementById('chart-tooltip');
+  if(!tip)return;
+  function hide(){tip.classList.remove('visible');}
+  document.addEventListener('click',hide,true);
+  document.addEventListener('touchstart',function(e){
+    // hide unless the touch is on an element that sets its own tooltip
+    hide();
+  },{passive:true,capture:true});
+  document.addEventListener('scroll',hide,{passive:true});
+  // auto-hide after a few seconds in case leave never fires
+  let t=null;
+  const mo=new MutationObserver(()=>{
+    if(tip.classList.contains('visible')){clearTimeout(t);t=setTimeout(hide,2600);}
+  });
+  mo.observe(tip,{attributes:true,attributeFilter:['class']});
+})();
+window.addEventListener('resize',()=>{
+  if(window.CHART_DRAWERS)Object.values(window.CHART_DRAWERS).forEach(d=>{if(d.done)d.fn();});
+});
+</script>
+</body>
+</html>
