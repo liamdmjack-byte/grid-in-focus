@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Anatomy of a 400 kV Pylon — Grid in Focus</title>
+<meta name="description" content="An interactive 3D model of a UK 400 kV transmission line, solar farm and substation — generated entirely from code. Part of Grid in Focus.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f1ea;
+    --ink:#1f2226;
+    --steel:#30343a;
+    --rust:#c4451c;
+    --muted:#6b6a63;
+    --hairline:rgba(31,34,38,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter Tight',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #stage{position:fixed;inset:0;cursor:grab;touch-action:none;}
+  #stage.dragging{cursor:grabbing;}
+
+  /* ---------- header ---------- */
+  .masthead{
+    position:fixed;top:0;left:0;right:0;
+    padding:22px 28px 0;
+    pointer-events:none;
+    z-index:10;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin-bottom:8px;
+  }
+  .eyebrow a{color:inherit;text-decoration:none;pointer-events:auto;}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(26px,4.2vw,44px);
+    line-height:1.05;
+    letter-spacing:-.01em;
+    max-width:13em;
+    transition:opacity .35s ease;
+  }
+  .standfirst{
+    margin-top:10px;
+    font-size:14px;line-height:1.5;
+    color:var(--muted);
+    max-width:36em;
+    transition:opacity .35s ease;
+  }
+  .fading h1,.fading .standfirst{opacity:0;}
+
+  /* ---------- render-mode toggle ---------- */
+  .modes{
+    position:fixed;top:24px;right:28px;
+    display:flex;z-index:11;
+    border:1px solid var(--hairline);
+    background:rgba(244,241,234,.85);
+    backdrop-filter:blur(4px);
+  }
+  .modes button{
+    appearance:none;border:0;background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:10px 16px;color:var(--muted);cursor:pointer;
+  }
+  .modes button + button{border-left:1px solid var(--hairline);}
+  .modes button::after{content:"";display:block;height:2px;background:transparent;margin-top:4px;}
+  .modes button.on{color:var(--rust);}
+  .modes button.on::after{background:var(--rust);}
+  .modes button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px;}
+
+  /* ---------- footer: views + specs ---------- */
+  .panel{
+    position:fixed;left:0;right:0;bottom:0;
+    border-top:1px solid var(--hairline);
+    background:linear-gradient(to top, rgba(244,241,234,.95), rgba(244,241,234,.72));
+    backdrop-filter:blur(3px);
+    z-index:10;
+  }
+  .views{
+    display:flex;gap:0;
+    border-bottom:1px solid var(--hairline);
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .views::-webkit-scrollbar{display:none;}
+  .views button{
+    appearance:none;border:0;background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:11px 18px 9px;color:var(--muted);cursor:pointer;
+    white-space:nowrap;
+    border-right:1px solid var(--hairline);
+    position:relative;
+  }
+  .views button.on{color:var(--rust);}
+  .views button.on::before{
+    content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--rust);
+  }
+  .views button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px;}
+
+  .specRow{
+    padding:12px 28px 16px;
+    display:flex;flex-wrap:wrap;gap:16px 34px;
+    align-items:flex-end;
+  }
+  .spec{min-width:84px;}
+  .spec .k{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:3px;
+  }
+  .spec .v{
+    font-family:'Fraunces',serif;
+    font-size:19px;font-weight:600;
+  }
+  .spec .v small{
+    font-family:'Inter Tight',sans-serif;
+    font-size:11px;font-weight:500;color:var(--muted);margin-left:2px;
+  }
+  .credit{
+    margin-left:auto;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.1em;color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  .controlsNote{
+    padding:8px 28px;
+    border-bottom:1px solid var(--hairline);
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);
+    white-space:nowrap;overflow-x:auto;scrollbar-width:none;
+  }
+  .controlsNote::-webkit-scrollbar{display:none;}
+  .touchOnly{display:none;}
+  @media (hover:none) and (pointer:coarse){
+    .deskOnly{display:none;}
+    .touchOnly{display:inline;}
+  }
+
+  @media (max-width:640px){
+    .masthead{padding:14px 16px 0;}
+    .eyebrow{font-size:10px;margin-bottom:6px;}
+    h1{font-size:22px;max-width:11em;}
+    .standfirst{display:none;}
+    .modes{top:12px;right:12px;}
+    .modes button{padding:9px 12px;font-size:10px;letter-spacing:.1em;}
+    .views button{padding:13px 15px 11px;font-size:10px;}
+    .specRow{
+      padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+      gap:0 20px;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+    .specRow::-webkit-scrollbar{display:none;}
+    .spec{min-width:auto;flex:0 0 auto;}
+    .spec .k{font-size:9px;}
+    .spec .v{font-size:15px;}
+    .credit{display:none;}
+    .controlsNote{padding:8px 16px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    h1,.standfirst{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<header class="masthead" id="masthead">
+  <div class="eyebrow"><a href="/">Grid in Focus</a> — Interactive</div>
+  <h1 id="viewTitle">Anatomy of a 400&#8202;kV pylon</h1>
+  <p class="standfirst" id="viewStand">An L6 suspension tower, the workhorse of the English 400 kV grid — every strut generated from code, no downloaded assets. The middle crossarms are the longest, extended to stop conductors clashing in the wind.</p>
+</header>
+
+<div class="modes" role="group" aria-label="Render mode">
+  <button id="btnSteel" class="on" aria-pressed="true">Steel</button>
+  <button id="btnWire" aria-pressed="false">Wireframe</button>
+</div>
+
+<footer class="panel">
+  <div class="controlsNote">
+    <span class="deskOnly">Drag orbit&ensp;·&ensp;Scroll zoom&ensp;·&ensp;Right-drag pan&ensp;·&ensp;Double-click to move there&ensp;·&ensp;WASD walks</span>
+    <span class="touchOnly">Drag orbit&ensp;·&ensp;Pinch zoom&ensp;·&ensp;Two-finger pan&ensp;·&ensp;Double-tap to move there</span>
+  </div>
+  <nav class="views" id="views" aria-label="Scene views"></nav>
+  <div class="specRow" id="specRow"></div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  var V3 = THREE.Vector3;
+  var paper = 0xf4f1ea;
+  var steelCol = 0x30343a;
+  var rustCol = 0xc4451c;
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============================ scene ============================ */
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(paper);
+  scene.fog = new THREE.Fog(paper, 240, 760);
+
+  var camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.5, 1600);
+
+  var renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  document.getElementById('stage').appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xf7f2e6, 0xcfc8b8, 0.95));
+  var sun = new THREE.DirectionalLight(0xffe9c8, 0.85);
+  sun.position.set(160, 220, 90);
+  scene.add(sun);
+
+  var ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(3200, 3200),
+    new THREE.MeshLambertMaterial({color:0xe9e4d7})
+  );
+  ground.rotation.x = -Math.PI/2;
+  scene.add(ground);
+
+  /* everything that should flip to rust wireframe in wire mode */
+  var solidExtras = []; // meshes / instanced meshes with own materials
+  function trackExtra(mesh){
+    mesh.userData.baseColor = mesh.material.color.getHex();
+    solidExtras.push(mesh);
+    return mesh;
+  }
+
+  /* ==================== lattice member system ==================== */
+  var members = []; // {a, b, t}
+  function M(a, b, t){ members.push({a:a, b:b, t:t}); }
+
+  var profile = [[0,4.7],[6,4.0],[12,3.3],[18,2.6],[24,2.05],[30,1.6],[33,1.35],[38,1.2],[44,1.05]];
+  function hw(h){
+    for (var i=0;i<profile.length-1;i++){
+      var p=profile[i], q=profile[i+1];
+      if (h>=p[0] && h<=q[0]){
+        var t=(h-p[0])/(q[0]-p[0]);
+        return p[1]+(q[1]-p[1])*t;
+      }
+    }
+    return profile[profile.length-1][1];
+  }
+
+  /* [height, half-length, tipDrop] — L6's middle arms are the longest */
+  var arms = [[27,8.6,0.4],[34.5,9.6,0.4],[41.5,7.2,0.35]];
+  var APEX = 50;
+
+  function buildTower(x0){
+    var legT = 0.42, braceT = 0.16, lvls = [0,4,8,12,16,20,24,27,30,33,36,39,42,44];
+    var i, j, s, sx, sz;
+
+    for (i=0;i<lvls.length-1;i++){
+      var h1=lvls[i], h2=lvls[i+1], w1=hw(h1), w2=hw(h2);
+      var lt = h1<24 ? legT : 0.3;
+      var c1=[], c2=[];
+      for (j=0;j<4;j++){
+        sx = (j===0||j===3)?1:-1; sz = (j<2)?1:-1;
+        c1.push([x0+sx*w1, h1, sz*w1]);
+        c2.push([x0+sx*w2, h2, sz*w2]);
+      }
+      for (j=0;j<4;j++){
+        M(c1[j], c2[j], lt);
+        var k=(j+1)%4;
+        M(c1[j], c2[k], braceT);
+        M(c1[k], c2[j], braceT);
+        M(c2[j], c2[k], braceT*0.9);
+      }
+    }
+
+    var wTop = hw(44);
+    for (j=0;j<4;j++){
+      sx=(j===0||j===3)?1:-1; sz=(j<2)?1:-1;
+      M([x0+sx*wTop, 44, sz*wTop], [x0, APEX, 0], 0.24);
+    }
+    M([x0+wTop,44,wTop],[x0-wTop,47,0.5],braceT*0.8);
+    M([x0-wTop,44,-wTop],[x0+wTop,47,-0.5],braceT*0.8);
+
+    for (i=0;i<arms.length;i++){
+      var aH=arms[i][0], aL=arms[i][1], drop=arms[i][2];
+      var w = hw(aH), wUp = hw(aH+2.6);
+      for (s=-1;s<=1;s+=2){
+        var tipF=[x0+w*0.32, aH+drop, s*aL];
+        var tipB=[x0-w*0.32, aH+drop, s*aL];
+        M([x0+w, aH, s*w], tipF, 0.26);
+        M([x0-w, aH, s*w], tipB, 0.26);
+        M([x0+wUp, aH+2.6, s*wUp], tipF, 0.26);
+        M([x0-wUp, aH+2.6, s*wUp], tipB, 0.26);
+        for (j=1;j<=2;j++){
+          var f=j/3;
+          var zc = s*(w + (aL-w)*f);
+          var yB = aH + drop*f;
+          var yT = (aH+2.6) + (drop-2.6)*f;
+          M([x0+w*(1-0.68*f), yB, zc], [x0+w*(1-0.68*f), yT, zc], braceT);
+          M([x0-w*(1-0.68*f), yB, zc], [x0-w*(1-0.68*f), yT, zc], braceT);
+          M([x0+w*(1-0.68*f), yB, zc], [x0-w*(1-0.68*f), yB, zc], braceT);
+        }
+        M(tipF, tipB, braceT);
+        M([x0, aH+drop-0.1, s*aL], [x0, aH+drop-4.6, s*aL], 0.14);
+      }
+    }
+  }
+
+  var TOWER_X = [-150, 0, 150];
+  TOWER_X.forEach(buildTower);
+
+  /* ==================== substation vignette ==================== */
+  /* small lattice column for gantry portals */
+  function latticeColumn(x0, z0, h, wBase, wTop){
+    var lv=[0, h*0.33, h*0.66, h];
+    for (var i=0;i<lv.length-1;i++){
+      var h1=lv[i], h2=lv[i+1];
+      var w1=wBase+(wTop-wBase)*(h1/h), w2=wBase+(wTop-wBase)*(h2/h);
+      var c1=[],c2=[];
+      for (var j=0;j<4;j++){
+        var sx=(j===0||j===3)?1:-1, sz=(j<2)?1:-1;
+        c1.push([x0+sx*w1,h1,z0+sz*w1]);
+        c2.push([x0+sx*w2,h2,z0+sz*w2]);
+      }
+      for (j=0;j<4;j++){
+        var k=(j+1)%4;
+        M(c1[j],c2[j],0.2);
+        M(c1[j],c2[k],0.1);
+        M(c1[k],c2[j],0.1);
+        M(c2[j],c2[k],0.1);
+      }
+    }
+  }
+  function latticeBeam(x1, x2, y, z, d){
+    var n = Math.max(3, Math.round((x2-x1)/4));
+    for (var i=0;i<n;i++){
+      var xa=x1+(x2-x1)*i/n, xb=x1+(x2-x1)*(i+1)/n;
+      M([xa,y,z-d],[xb,y,z-d],0.14); M([xa,y,z+d],[xb,y,z+d],0.14);
+      M([xa,y+d*1.6,z-d],[xb,y+d*1.6,z-d],0.14); M([xa,y+d*1.6,z+d],[xb,y+d*1.6,z+d],0.14);
+      M([xa,y,z-d],[xb,y+d*1.6,z-d],0.09);
+      M([xa,y+d*1.6,z+d],[xb,y,z+d],0.09);
+      M([xa,y,z-d],[xa,y,z+d],0.09);
+      M([xa,y+d*1.6,z-d],[xa,y+d*1.6,z+d],0.09);
+    }
+  }
+
+  var SUB = {x:250, z:70};
+  /* two gantry portals */
+  [SUB.z-22, SUB.z+22].forEach(function(zP){
+    latticeColumn(SUB.x-14, zP, 12, 1.0, 0.6);
+    latticeColumn(SUB.x+14, zP, 12, 1.0, 0.6);
+    latticeBeam(SUB.x-14, SUB.x+14, 11, zP, 0.7);
+  });
+  /* perimeter fence via members */
+  (function fence(){
+    var x1=SUB.x-30, x2=SUB.x+30, z1=SUB.z-40, z2=SUB.z+40, step=6, fh=2.4;
+    function run(ax,az,bx,bz){
+      var len=Math.hypot(bx-ax,bz-az), n=Math.round(len/step);
+      for (var i=0;i<=n;i++){
+        var t=i/n, px=ax+(bx-ax)*t, pz=az+(bz-az)*t;
+        M([px,0,pz],[px,fh,pz],0.07);
+      }
+      M([ax,fh,az],[bx,fh,bz],0.06);
+    }
+    run(x1,z1,x2,z1); run(x2,z1,x2,z2); run(x2,z2,x1,z2); run(x1,z2,x1,z1);
+  })();
+
+  /* transformers — box body, radiator fins, conservator, bushings */
+  function transformer(x, z){
+    var g = new THREE.Group();
+    var body = trackExtra(new THREE.Mesh(
+      new THREE.BoxGeometry(8,5,4.6),
+      new THREE.MeshLambertMaterial({color:0x3a4046})
+    ));
+    body.position.set(0,2.5,0); g.add(body);
+    for (var i=0;i<6;i++){
+      var fin = trackExtra(new THREE.Mesh(
+        new THREE.BoxGeometry(0.35,4.2,4.2),
+        new THREE.MeshLambertMaterial({color:0x2f353b})
+      ));
+      fin.position.set(-4.8-(i%3)*0.7, 2.4, (i<3?0:0.001));
+      g.add(fin);
+    }
+    var cons = trackExtra(new THREE.Mesh(
+      new THREE.CylinderGeometry(0.9,0.9,6.5,10),
+      new THREE.MeshLambertMaterial({color:0x3a4046})
+    ));
+    cons.rotation.z = Math.PI/2;
+    cons.position.set(0,6.2,-1.4); g.add(cons);
+    for (i=0;i<3;i++){
+      var bush = trackExtra(new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28,0.4,3.4,8),
+        new THREE.MeshLambertMaterial({color:0x24272b})
+      ));
+      bush.position.set(-2.4+i*2.4, 6.8, 1.0); g.add(bush);
+    }
+    g.position.set(x,0,z);
+    scene.add(g);
+  }
+  transformer(SUB.x-6, SUB.z-2);
+  transformer(SUB.x+10, SUB.z+8);
+
+  /* ==================== instanced steel + wireframe twin ==================== */
+  var steelMat = new THREE.MeshLambertMaterial({color:steelCol});
+  var boxGeo = new THREE.BoxGeometry(1,1,1);
+  var inst = new THREE.InstancedMesh(boxGeo, steelMat, members.length);
+  var up = new V3(0,1,0), q = new THREE.Quaternion(), m4 = new THREE.Matrix4();
+  var wirePos = new Float32Array(members.length*6);
+
+  members.forEach(function(mm,i){
+    var a = new V3(mm.a[0],mm.a[1],mm.a[2]);
+    var b = new V3(mm.b[0],mm.b[1],mm.b[2]);
+    var dir = b.clone().sub(a);
+    var len = dir.length();
+    q.setFromUnitVectors(up, dir.normalize());
+    m4.compose(a.clone().add(b).multiplyScalar(0.5), q, new V3(mm.t, len, mm.t));
+    inst.setMatrixAt(i, m4);
+    wirePos[i*6]=mm.a[0]; wirePos[i*6+1]=mm.a[1]; wirePos[i*6+2]=mm.a[2];
+    wirePos[i*6+3]=mm.b[0]; wirePos[i*6+4]=mm.b[1]; wirePos[i*6+5]=mm.b[2];
+  });
+  scene.add(inst);
+
+  var wireGeo = new THREE.BufferGeometry();
+  wireGeo.setAttribute('position', new THREE.BufferAttribute(wirePos, 3));
+  var wire = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({color:rustCol}));
+  wire.visible = false;
+  scene.add(wire);
+
+  var steelGroups = [inst];
+  var wireGroups = [wire];
+
+  /* ==================== insulator sheds ==================== */
+  var DISCS_PER_STRING = 10;
+  var stringSpots = [];
+  TOWER_X.forEach(function(x0){
+    arms.forEach(function(a){
+      [-1,1].forEach(function(s){
+        stringSpots.push([x0, a[0]+a[2]-0.4, s*a[1]]);
+      });
+    });
+  });
+  var discGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.12, 10);
+  var discMat = new THREE.MeshLambertMaterial({color:0x24272b});
+  var discs = new THREE.InstancedMesh(discGeo, discMat, stringSpots.length*DISCS_PER_STRING);
+  var dm = new THREE.Matrix4(); var di=0;
+  stringSpots.forEach(function(p){
+    for (var d=0; d<DISCS_PER_STRING; d++){
+      dm.makeTranslation(p[0], p[1]-d*0.42, p[2]);
+      discs.setMatrixAt(di++, dm);
+    }
+  });
+  scene.add(discs);
+  steelGroups.push(discs);
+
+  /* ==================== conductors ==================== */
+  var condMat = new THREE.LineBasicMaterial({color:steelCol, transparent:true, opacity:0.75});
+  var condWireMat = new THREE.LineBasicMaterial({color:rustCol, transparent:true, opacity:0.85});
+  var conductorLines = [];
+
+  function catenary(x1, x2, y1, y2, z, sag){
+    var pts = [];
+    for (var i=0;i<=40;i++){
+      var t=i/40;
+      pts.push(new V3(x1+(x2-x1)*t, y1+(y2-y1)*t - sag*4*t*(1-t), z));
+    }
+    var g = new THREE.BufferGeometry().setFromPoints(pts);
+    var line = new THREE.Line(g, condMat);
+    scene.add(line);
+    conductorLines.push(line);
+  }
+
+  arms.forEach(function(a){
+    [-1,1].forEach(function(s){
+      var y = a[0]+a[2]-4.6, z = s*a[1];
+      catenary(-150, 0, y, y, z, 9);
+      catenary(0, 150, y, y, z, 9);
+      catenary(-280, -150, y-4, y, z, 5);
+      catenary(150, 280, y, y-4, z, 5);
+    });
+  });
+  catenary(-150, 0, APEX, APEX, 0, 6.5);
+  catenary(0, 150, APEX, APEX, 0, 6.5);
+  catenary(-280, -150, APEX-3, APEX, 0, 3.5);
+  catenary(150, 280, APEX, APEX-3, 0, 3.5);
+  /* short spans between the substation gantry beams */
+  function catenaryZ(z1, z2, y, x, sag){
+    var pts=[];
+    for (var i=0;i<=24;i++){
+      var t=i/24;
+      pts.push(new V3(x, y - sag*4*t*(1-t), z1+(z2-z1)*t));
+    }
+    var g = new THREE.BufferGeometry().setFromPoints(pts);
+    var line = new THREE.Line(g, condMat);
+    scene.add(line);
+    conductorLines.push(line);
+  }
+  [-8, 0, 8].forEach(function(dx){
+    catenaryZ(SUB.z-22, SUB.z+22, 10.6, SUB.x+dx, 2.2);
+  });
+
+  /* ==================== solar farm ==================== */
+  var ROWS = 11, PER_ROW = 16;
+  var panelGeo = new THREE.BoxGeometry(8, 0.16, 3.6);
+  var panelMat = new THREE.MeshLambertMaterial({color:0x2a3340});
+  var panels = new THREE.InstancedMesh(panelGeo, panelMat, ROWS*PER_ROW);
+  panels.userData.baseColor = panelMat.color.getHex();
+  solidExtras.push(panels);
+  var pq = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.61, 0, 0));
+  var pm = new THREE.Matrix4(); var pi=0;
+  for (var r=0;r<ROWS;r++){
+    for (var c=0;c<PER_ROW;c++){
+      pm.compose(
+        new V3(-82 + c*10.6, 2.1, 78 + r*9.5),
+        pq, new V3(1,1,1)
+      );
+      panels.setMatrixAt(pi++, pm);
+    }
+  }
+  scene.add(panels);
+  /* mounting posts via members so they show in wireframe */
+  for (r=0;r<ROWS;r++){
+    for (c=0;c<PER_ROW;c++){
+      var px=-82+c*10.6, pz=78+r*9.5;
+      M([px-2.6, 0, pz],[px-2.6, 1.7, pz], 0.1);
+      M([px+2.6, 0, pz],[px+2.6, 1.7, pz], 0.1);
+    }
+  }
+  /* rebuild wouldn't include these — so instead: posts added before inst build?
+     They were added after. Fix: build a second small instanced mesh for posts. */
+  (function(){
+    var extra = members.splice(inst.count); /* members added after main build */
+    if (!extra.length) return;
+    var postInst = new THREE.InstancedMesh(boxGeo, steelMat, extra.length);
+    var wp = new Float32Array(extra.length*6);
+    extra.forEach(function(mm,i){
+      var a = new V3(mm.a[0],mm.a[1],mm.a[2]);
+      var b = new V3(mm.b[0],mm.b[1],mm.b[2]);
+      var dir = b.clone().sub(a);
+      var len = dir.length();
+      q.setFromUnitVectors(up, dir.normalize());
+      m4.compose(a.clone().add(b).multiplyScalar(0.5), q, new V3(mm.t, len, mm.t));
+      postInst.setMatrixAt(i, m4);
+      wp[i*6]=mm.a[0]; wp[i*6+1]=mm.a[1]; wp[i*6+2]=mm.a[2];
+      wp[i*6+3]=mm.b[0]; wp[i*6+4]=mm.b[1]; wp[i*6+5]=mm.b[2];
+    });
+    scene.add(postInst);
+    var wg = new THREE.BufferGeometry();
+    wg.setAttribute('position', new THREE.BufferAttribute(wp,3));
+    var wl = new THREE.LineSegments(wg, wire.material);
+    wl.visible = false;
+    scene.add(wl);
+    steelGroups.push(postInst);
+    wireGroups.push(wl);
+  })();
+
+  /* ==================== render-mode toggle ==================== */
+  var btnSteel = document.getElementById('btnSteel');
+  var btnWire = document.getElementById('btnWire');
+  function setMode(wireMode){
+    steelGroups.forEach(function(o){ o.visible = !wireMode; });
+    wireGroups.forEach(function(o){ o.visible = wireMode; });
+    ground.visible = !wireMode;
+    conductorLines.forEach(function(l){ l.material = wireMode ? condWireMat : condMat; });
+    solidExtras.forEach(function(mesh){
+      mesh.material.wireframe = wireMode;
+      mesh.material.color.setHex(wireMode ? rustCol : mesh.userData.baseColor);
+    });
+    btnSteel.classList.toggle('on', !wireMode);
+    btnWire.classList.toggle('on', wireMode);
+    btnSteel.setAttribute('aria-pressed', String(!wireMode));
+    btnWire.setAttribute('aria-pressed', String(wireMode));
+  }
+  btnSteel.addEventListener('click', function(){ setMode(false); });
+  btnWire.addEventListener('click', function(){ setMode(true); });
+
+  /* ==================== views ==================== */
+  var VIEWS = [
+    {
+      id:'line', label:'Pylons',
+      title:'Anatomy of a 400 kV pylon',
+      stand:'An L6 suspension tower, the workhorse of the English 400 kV grid — every strut generated from code, no downloaded assets. The middle crossarms are the longest, extended to stop conductors clashing in the wind.',
+      cam:{tx:0, ty:25, tz:0, theta:0.9, phi:1.28, r:165},
+      specs:[['Type','L6',''],['Voltage','400','kV'],['Height','~50','m'],['Steel','23.2','tonnes'],['Bundle','4×','Zebra'],['Circuits','2','× 3-phase']]
+    },
+    {
+      id:'solar', label:'Solar',
+      title:'A field of silicon',
+      stand:'Ground-mount arrays tilted toward the sun. No moving parts, no fuel — and no inertia, which is the grid\u2019s quiet trade-off.',
+      cam:{tx:0, ty:6, tz:125, theta:2.75, phi:0.82, r:170},
+      specs:[['Tilt','35','°'],['Tables','176',''],['Moving parts','0',''],['Inertia','0','']]
+    },
+    {
+      id:'substation', label:'Substation',
+      title:'Where the voltage steps down',
+      stand:'Gantries catch the incoming line; supergrid transformers step 400 kV down toward the distribution network.',
+      cam:{tx:250, ty:10, tz:60, theta:0.85, phi:1.18, r:120},
+      specs:[['Gantries','2','portals'],['Transformers','2','SGT'],['Step','400','kV in'],['Busbars','3','phases']]
+    }
+  ];
+
+  var viewsNav = document.getElementById('views');
+  var specRow = document.getElementById('specRow');
+  var viewTitle = document.getElementById('viewTitle');
+  var viewStand = document.getElementById('viewStand');
+  var masthead = document.getElementById('masthead');
+
+  var camCur = Object.assign({}, VIEWS[0].cam);
+  var camDest = Object.assign({}, VIEWS[0].cam);
+  var flying = false;
+
+  function renderSpecs(v){
+    var html = '';
+    v.specs.forEach(function(s){
+      html += '<div class="spec"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+
+              (s[2] ? '<small>'+s[2]+'</small>' : '')+'</div></div>';
+    });
+    html += '<div class="credit">Procedural model · Three.js</div>';
+    specRow.innerHTML = html;
+  }
+
+  function setView(v, instant){
+    Array.prototype.forEach.call(viewsNav.children, function(btn){
+      btn.classList.toggle('on', btn.dataset.view === v.id);
+    });
+    camDest = Object.assign({}, v.cam);
+    flying = !instant && !reducedMotion;
+    if (instant || reducedMotion) camCur = Object.assign({}, v.cam);
+    if (reducedMotion){
+      viewTitle.textContent = v.title;
+      viewStand.textContent = v.stand;
+      renderSpecs(v);
+    } else {
+      masthead.classList.add('fading');
+      setTimeout(function(){
+        viewTitle.textContent = v.title;
+        viewStand.textContent = v.stand;
+        renderSpecs(v);
+        masthead.classList.remove('fading');
+      }, 320);
+    }
+  }
+
+  VIEWS.forEach(function(v, i){
+    var b = document.createElement('button');
+    b.textContent = v.label;
+    b.dataset.view = v.id;
+    if (i===0) b.classList.add('on');
+    b.addEventListener('click', function(){ setView(v, false); });
+    viewsNav.appendChild(b);
+  });
+  renderSpecs(VIEWS[0]);
+
+  /* ==================== camera + controls ==================== */
+  var MIN_R = 40, MAX_R = 560;
+  var autoRotate = !reducedMotion;
+  var stage = document.getElementById('stage');
+
+  function distScale(){
+    var a = innerWidth/innerHeight;
+    return a < 1 ? Math.min(1.75, 0.95/a) : 1;
+  }
+
+  function applyCamera(){
+    camCur.phi = Math.max(0.3, Math.min(1.52, camCur.phi));
+    camCur.r = Math.max(MIN_R, Math.min(MAX_R, camCur.r));
+    var rr = camCur.r * distScale();
+    camera.position.set(
+      camCur.tx + rr*Math.sin(camCur.phi)*Math.sin(camCur.theta),
+      camCur.ty + rr*Math.cos(camCur.phi),
+      camCur.tz + rr*Math.sin(camCur.phi)*Math.cos(camCur.theta)
+    );
+    camera.lookAt(camCur.tx, camCur.ty, camCur.tz);
+  }
+
+  var dragging=false, panning=false, lastX=0, lastY=0, downX=0, downY=0;
+  var pinchDist=0, lastMidX=0, lastMidY=0;
+  var activePointers = 0;
+  var tapT=0, tapX=0, tapY=0;
+  var keys = {};
+  var raycaster = new THREE.Raycaster();
+  var groundPlane = new THREE.Plane(new V3(0,1,0), 0);
+
+  function userTouched(){
+    autoRotate = false;
+    flying = false;
+  }
+
+  function pan(dx, dy){
+    var s = camCur.r * 0.0011 * distScale();
+    var fx = -Math.sin(camCur.theta), fz = -Math.cos(camCur.theta);   /* screen-up on ground */
+    var rx =  Math.cos(camCur.theta), rz = -Math.sin(camCur.theta);   /* screen-right on ground */
+    camCur.tx += (-rx*dx + fx*dy) * s;
+    camCur.tz += (-rz*dx + fz*dy) * s;
+    camCur.tx = Math.max(-500, Math.min(500, camCur.tx));
+    camCur.tz = Math.max(-500, Math.min(500, camCur.tz));
+  }
+
+  function moveTo(clientX, clientY){
+    raycaster.setFromCamera(
+      new THREE.Vector2((clientX/innerWidth)*2-1, -(clientY/innerHeight)*2+1),
+      camera
+    );
+    var pt = new V3();
+    if (raycaster.ray.intersectPlane(groundPlane, pt)){
+      camDest = Object.assign({}, camCur, {
+        tx: Math.max(-500, Math.min(500, pt.x)),
+        tz: Math.max(-500, Math.min(500, pt.z)),
+        r: Math.min(camCur.r, 140)
+      });
+      flying = true;
+        autoRotate = false;
+    }
+  }
+
+  stage.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  stage.addEventListener('pointerdown', function(e){
+    activePointers++;
+    dragging=true;
+    panning = (e.button === 2);
+    downX=lastX=e.clientX; downY=lastY=e.clientY;
+    stage.classList.add('dragging');
+    stage.setPointerCapture(e.pointerId);
+    userTouched();
+  });
+  stage.addEventListener('pointermove', function(e){
+    if(!dragging || activePointers > 1) return;   /* two-finger handled via touch events */
+    var dx = e.clientX-lastX, dy = e.clientY-lastY;
+    if (panning){
+      pan(dx, dy);
+    } else {
+      camCur.theta -= dx*0.0055;
+      camCur.phi   -= dy*0.0045;
+    }
+    lastX=e.clientX; lastY=e.clientY;
+  });
+  function endPointer(e){
+    activePointers = Math.max(0, activePointers-1);
+    dragging=false; panning=false;
+    stage.classList.remove('dragging');
+    /* double-tap / double-click to fly there */
+    if (e.type === 'pointerup' && Math.hypot(e.clientX-downX, e.clientY-downY) < 8){
+      var now = performance.now();
+      if (now - tapT < 320 && Math.hypot(e.clientX-tapX, e.clientY-tapY) < 30){
+        moveTo(e.clientX, e.clientY);
+        tapT = 0;
+      } else {
+        tapT = now; tapX=e.clientX; tapY=e.clientY;
+      }
+    }
+  }
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', endPointer);
+
+  stage.addEventListener('wheel', function(e){
+    e.preventDefault();
+    camCur.r *= (1 + Math.sign(e.deltaY)*0.08);
+    userTouched();
+  }, {passive:false});
+
+  stage.addEventListener('touchstart', function(e){
+    if(e.touches.length===2){
+      pinchDist = Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      lastMidX = (e.touches[0].clientX+e.touches[1].clientX)/2;
+      lastMidY = (e.touches[0].clientY+e.touches[1].clientY)/2;
+    }
+  }, {passive:true});
+  stage.addEventListener('touchmove', function(e){
+    if(e.touches.length===2){
+      var d = Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      if (pinchDist>0) camCur.r *= pinchDist/d;
+      pinchDist = d;
+      var midX = (e.touches[0].clientX+e.touches[1].clientX)/2;
+      var midY = (e.touches[0].clientY+e.touches[1].clientY)/2;
+      pan(midX-lastMidX, midY-lastMidY);          /* two-finger drag pans */
+      lastMidX = midX; lastMidY = midY;
+      userTouched();
+    }
+  }, {passive:true});
+
+  /* WASD / arrow keys walk the target around the site */
+  addEventListener('keydown', function(e){
+    var k = e.key.toLowerCase();
+    if ('wasd'.indexOf(k) !== -1 || k.indexOf('arrow') === 0){
+      keys[k] = true;
+      userTouched();
+    }
+  });
+  addEventListener('keyup', function(e){ keys[e.key.toLowerCase()] = false; });
+
+  function walk(){
+    var f = ((keys['w']||keys['arrowup'])?1:0) - ((keys['s']||keys['arrowdown'])?1:0);
+    var r = ((keys['d']||keys['arrowright'])?1:0) - ((keys['a']||keys['arrowleft'])?1:0);
+    if (!f && !r) return;
+    var sp = camCur.r * 0.014;
+    var fx = -Math.sin(camCur.theta), fz = -Math.cos(camCur.theta);
+    var rx =  Math.cos(camCur.theta), rz = -Math.sin(camCur.theta);
+    camCur.tx = Math.max(-500, Math.min(500, camCur.tx + (fx*f + rx*r)*sp));
+    camCur.tz = Math.max(-500, Math.min(500, camCur.tz + (fz*f + rz*r)*sp));
+  }
+
+  addEventListener('resize', function(){
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  /* ==================== loop ==================== */
+  var EASE = 0.055;
+  function tick(){
+    requestAnimationFrame(tick);
+    if (flying){
+      var done = true;
+      ['tx','ty','tz','theta','phi','r'].forEach(function(k){
+        var d = camDest[k]-camCur[k];
+        camCur[k] += d*EASE;
+        if (Math.abs(d) > 0.01) done = false;
+      });
+      if (done) flying = false;
+    } else if (autoRotate){
+      camCur.theta += 0.0011;
+    }
+    walk();
+    applyCamera();
+    renderer.render(scene, camera);
+  }
+  applyCamera();
+  tick();
+})();
+</script>
+</body>
+</html>
