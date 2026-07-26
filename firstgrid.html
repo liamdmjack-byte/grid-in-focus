@@ -197,7 +197,7 @@ input[type=range].gif-range-light::-webkit-slider-thumb{-webkit-appearance:none;
         <div class="chart-loader-label">Building timelines</div>
         <div class="chart-loader-source">CEB records · modern DCO timelines</div>
       </div>
-      <svg id="dual-timeline" viewBox="0 0 1100 380"></svg>
+      <svg id="dual-timeline" viewBox="0 0 1100 540"></svg>
     </div>
   </div>
 
@@ -330,30 +330,30 @@ function drawDualTimeline(){
      ]},
   ];
   const svg=d3.select('#dual-timeline');
-  const W=1100,H=380,margin={top:50,right:40,bottom:40,left:40};
+  const W=1100,H=540,margin={top:50,right:40,bottom:40,left:40};
   const w=W-margin.left-margin.right,h=H-margin.top-margin.bottom;
   svg.selectAll('*').remove();
   const g=svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
   const x=d3.scaleLinear().domain([0,12]).range([0,w]);
-  const rowY=i=>i===0?70:230;
+  const rowY=i=>i===0?130:340;
   // year ruler
   for(let yr=0;yr<=12;yr+=2){
-    g.append('line').attr('x1',x(yr)).attr('x2',x(yr)).attr('y1',20).attr('y2',h-10).attr('stroke','var(--rule)').attr('stroke-dasharray','2,4');
-    g.append('text').attr('x',x(yr)).attr('y',8).attr('text-anchor','middle')
+    g.append('line').attr('x1',x(yr)).attr('x2',x(yr)).attr('y1',44).attr('y2',h-10).attr('stroke','var(--rule)').attr('stroke-dasharray','2,4');
+    g.append('text').attr('x',x(yr)).attr('y',30).attr('text-anchor','middle')
       .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-muted)')
       .text('Year '+yr);
   }
   const tooltip=d3.select('#chart-tooltip');
   tracks.forEach((tr,i)=>{
     const y=rowY(i);
-    g.append('text').attr('x',0).attr('y',y-34)
+    g.append('text').attr('x',0).attr('y',y-76)
       .style('font-family','JetBrains Mono, monospace').style('font-size','10px')
       .style('letter-spacing','.12em').style('fill',tr.color).text(tr.name);
     g.append('line').attr('x1',x(tr.start)).attr('x2',x(tr.start)).attr('y1',y).attr('y2',y)
       .attr('stroke',tr.color).attr('stroke-width',5).attr('stroke-linecap','round')
       .transition().duration(1400).delay(i*300).ease(d3.easeCubicOut).attr('x2',x(tr.end));
     tr.events.forEach((e,j)=>{
-      const above=j%2===0;
+      const above=(j===0)?false:(j%2===0);
       const cy=y;
       g.append('circle').attr('cx',x(e.t)).attr('cy',cy).attr('r',0)
         .attr('fill',e.big?tr.color:'var(--paper-warm)').attr('stroke',tr.color).attr('stroke-width',2)
@@ -362,7 +362,7 @@ function drawDualTimeline(){
         .on('mousemove',function(event){tooltip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px')})
         .on('mouseleave',function(){tooltip.classed('visible',false)})
         .transition().duration(350).delay(i*300+300+j*140).attr('r',e.big?7:5);
-      const ly=above?cy-18-(j%4===0?14:0):cy+26+(j%4===1?14:0);
+      const ly=above?cy-28-(j%2===0?20:0):cy+36+(j%2===1?20:0);
       g.append('text').attr('x',Math.min(Math.max(x(e.t),2),w-2)).attr('y',ly)
         .attr('text-anchor',x(e.t)>w*.8?'end':(x(e.t)<w*.1?'start':'middle'))
         .style('font-family','JetBrains Mono, monospace').style('font-size','9px').style('fill','var(--ink-soft)')
@@ -371,7 +371,7 @@ function drawDualTimeline(){
         .transition().duration(350).delay(i*300+400+j*140).style('opacity',1);
     });
   });
-  g.append('text').attr('x',w).attr('y',rowY(1)+58).attr('text-anchor','end')
+  g.append('text').attr('x',w).attr('y',rowY(1)+92).attr('text-anchor','end')
     .style('font-family','Fraunces, serif').style('font-style','italic').style('font-size','13px').style('fill','var(--accent)')
     .text('The whole grid, top. One line, bottom.');
 }
